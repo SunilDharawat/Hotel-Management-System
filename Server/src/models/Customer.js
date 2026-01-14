@@ -186,7 +186,10 @@ class Customer {
 
     return rows.map((row) => ({
       ...row,
-      preferences: row.preferences ? JSON.parse(row.preferences) : {},
+      preferences:
+        typeof row.preferences === "string"
+          ? JSON.parse(row.preferences)
+          : row.preferences || {},
     }));
   }
 

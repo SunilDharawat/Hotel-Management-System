@@ -9,6 +9,7 @@ const roomRoutes = require("./rooms");
 const bookingRoutes = require("./bookings");
 const invoiceRoutes = require("./invoices");
 const paymentRoutes = require("./payments");
+const settingsRoutes = require("./settings");
 
 // Mount routes
 router.use("/auth", authRoutes);
@@ -18,6 +19,7 @@ router.use("/rooms", roomRoutes);
 router.use("/bookings", bookingRoutes);
 router.use("/invoices", invoiceRoutes);
 router.use("/payments", paymentRoutes);
+router.use("/settings", settingsRoutes);
 
 // Health check
 router.get("/health", (req, res) => {

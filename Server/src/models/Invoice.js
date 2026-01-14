@@ -337,20 +337,70 @@ class Invoice {
     return updatedInvoice;
   }
 
-  /**
-   * Get all invoices
-   */
+  // /**
+  //  * Get all invoices
+  //  */
+  // static async findAll(filters = {}) {
+  //   let query = `
+  //     SELECT i.*,
+  //       c.full_name as customer_name,
+  //       c.contact_number as customer_phone,
+  //       b.booking_number
+  //     FROM invoices i
+  //     LEFT JOIN customers c ON i.customer_id = c.id
+  //     LEFT JOIN bookings b ON i.booking_id = b.id
+  //     WHERE 1=1
+  //   `;
+  //   const values = [];
+
+  //   if (filters.payment_status) {
+  //     query += " AND i.payment_status = ?";
+  //     values.push(filters.payment_status);
+  //   }
+
+  //   if (filters.customer_id) {
+  //     query += " AND i.customer_id = ?";
+  //     values.push(filters.customer_id);
+  //   }
+
+  //   if (filters.booking_id) {
+  //     query += " AND i.booking_id = ?";
+  //     values.push(filters.booking_id);
+  //   }
+
+  //   if (filters.search) {
+  //     query += " AND (i.invoice_number LIKE ? OR c.full_name LIKE ?)";
+  //     const searchTerm = `%${filters.search}%`;
+  //     values.push(searchTerm, searchTerm);
+  //   }
+
+  //   query += " ORDER BY i.created_at DESC";
+
+  //   if (filters.limit && filters.limit > 0) {
+  //     query += " LIMIT ?";
+  //     values.push(parseInt(filters.limit));
+
+  //     if (filters.offset && filters.offset > 0) {
+  //       query += " OFFSET ?";
+  //       values.push(parseInt(filters.offset));
+  //     }
+  //   }
+
+  //   const [rows] = await db.execute(query, values);
+  //   return rows;
+  // }
   static async findAll(filters = {}) {
     let query = `
-      SELECT i.*, 
-        c.full_name as customer_name, 
-        c.contact_number as customer_phone,
-        b.booking_number
-      FROM invoices i
-      LEFT JOIN customers c ON i.customer_id = c.id
-      LEFT JOIN bookings b ON i.booking_id = b.id
-      WHERE 1=1
-    `;
+    SELECT i.*, 
+      c.full_name AS customer_name, 
+      c.contact_number AS customer_phone,
+      b.booking_number
+    FROM invoices i
+    LEFT JOIN customers c ON i.customer_id = c.id
+    LEFT JOIN bookings b ON i.booking_id = b.id
+    WHERE 1=1
+  `;
+
     const values = [];
 
     if (filters.payment_status) {
@@ -376,15 +426,11 @@ class Invoice {
 
     query += " ORDER BY i.created_at DESC";
 
-    if (filters.limit && filters.limit > 0) {
-      query += " LIMIT ?";
-      values.push(parseInt(filters.limit));
+    // ✅ SAFE pagination (NO placeholders)
+    const limit = Number.isInteger(+filters.limit) ? +filters.limit : 10;
+    const offset = Number.isInteger(+filters.offset) ? +filters.offset : 0;
 
-      if (filters.offset && filters.offset > 0) {
-        query += " OFFSET ?";
-        values.push(parseInt(filters.offset));
-      }
-    }
+    query += ` LIMIT ${limit} OFFSET ${offset}`;
 
     const [rows] = await db.execute(query, values);
     return rows;

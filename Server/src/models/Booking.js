@@ -328,16 +328,70 @@ class Booking {
   /**
    * Get all bookings with filters
    */
+  // static async findAll(filters = {}) {
+  //   let query = `
+  //     SELECT b.*,
+  //       c.full_name as customer_name, c.contact_number as customer_phone,
+  //       r.room_number, r.type as room_type
+  //     FROM bookings b
+  //     LEFT JOIN customers c ON b.customer_id = c.id
+  //     LEFT JOIN rooms r ON b.room_id = r.id
+  //     WHERE 1=1
+  //   `;
+  //   const values = [];
+
+  //   if (filters.status) {
+  //     query += " AND b.status = ?";
+  //     values.push(filters.status);
+  //   }
+
+  //   if (filters.customer_id) {
+  //     query += " AND b.customer_id = ?";
+  //     values.push(filters.customer_id);
+  //   }
+
+  //   if (filters.room_id) {
+  //     query += " AND b.room_id = ?";
+  //     values.push(filters.room_id);
+  //   }
+
+  //   if (filters.check_in_date) {
+  //     query += " AND b.check_in_date = ?";
+  //     values.push(filters.check_in_date);
+  //   }
+
+  //   if (filters.search) {
+  //     query +=
+  //       " AND (b.booking_number LIKE ? OR c.full_name LIKE ? OR r.room_number LIKE ?)";
+  //     const searchTerm = `%${filters.search}%`;
+  //     values.push(searchTerm, searchTerm, searchTerm);
+  //   }
+
+  //   query += " ORDER BY b.created_at DESC";
+
+  //   if (filters.limit && filters.limit > 0) {
+  //     query += " LIMIT ?";
+  //     values.push(parseInt(filters.limit));
+
+  //     if (filters.offset && filters.offset > 0) {
+  //       query += " OFFSET ?";
+  //       values.push(parseInt(filters.offset));
+  //     }
+  //   }
+
+  //   const [rows] = await db.execute(query, values);
+  //   return rows;
+  // }
   static async findAll(filters = {}) {
     let query = `
-      SELECT b.*, 
-        c.full_name as customer_name, c.contact_number as customer_phone,
-        r.room_number, r.type as room_type
-      FROM bookings b
-      LEFT JOIN customers c ON b.customer_id = c.id
-      LEFT JOIN rooms r ON b.room_id = r.id
-      WHERE 1=1
-    `;
+    SELECT b.*, 
+      c.full_name as customer_name, c.contact_number as customer_phone,
+      r.room_number, r.type as room_type
+    FROM bookings b
+    LEFT JOIN customers c ON b.customer_id = c.id
+    LEFT JOIN rooms r ON b.room_id = r.id
+    WHERE 1=1
+  `;
     const values = [];
 
     if (filters.status) {
@@ -369,15 +423,10 @@ class Booking {
 
     query += " ORDER BY b.created_at DESC";
 
-    if (filters.limit && filters.limit > 0) {
-      query += " LIMIT ?";
-      values.push(parseInt(filters.limit));
-
-      if (filters.offset && filters.offset > 0) {
-        query += " OFFSET ?";
-        values.push(parseInt(filters.offset));
-      }
-    }
+    // ✅ FIXED PAGINATION
+    const limit = Number.isInteger(filters.limit) ? filters.limit : 10;
+    const offset = Number.isInteger(filters.offset) ? filters.offset : 0;
+    query += ` LIMIT ${limit} OFFSET ${offset}`;
 
     const [rows] = await db.execute(query, values);
     return rows;

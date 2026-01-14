@@ -3,28 +3,48 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { useCustomers, useBookings, useRooms, useSettings } from '@/contexts/AppContext';
-import { format } from 'date-fns';
-import { Printer, Download, X } from 'lucide-react';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { Printer, Download, X } from "lucide-react";
+import { customersAPI } from "@/api/customers";
+import { settingsAPI } from "@/api/settings";
+import { bookingsAPI } from "@/api/bookings";
+import { roomsAPI } from "@/api/rooms";
+import { useSettings } from "@/hooks/useSettings";
 
 export function InvoiceViewModal({ isOpen, onClose, invoice }) {
-  const { customers } = useCustomers();
-  const { bookings } = useBookings();
-  const { rooms } = useRooms();
-  const { settings } = useSettings();
+  const { data: rooms, isLoading: roomsLoading } = useQuery({
+    queryKey: ["rooms"],
+    queryFn: () => roomsAPI.getAll(),
+    select: (response) => response.data.rooms,
+  });
 
-  const customer = customers.find(c => c.id === invoice.customerId);
-  const booking = bookings.find(b => b.id === invoice.bookingId);
-  const room = booking ? rooms.find(r => r.id === booking.roomId) : null;
+  const { data: bookings, isLoading: bookingsLoading } = useQuery({
+    queryKey: ["bookings"],
+    queryFn: () => bookingsAPI.getAll(),
+    select: (response) => response.data.bookings,
+  });
+
+  const { data: customers, isLoading: customersLoading } = useQuery({
+    queryKey: ["customers"],
+    queryFn: () => customersAPI.getAll(),
+    select: (response) => response.data.customers,
+  });
+  const { data: settings, settingLoading, settingError } = useSettings();
+
+  const customer = customers?.find((c) => c.id === invoice.customer_id);
+
+  const booking = bookings?.find((b) => b.id === invoice.booking_id);
+  const room = booking ? rooms?.find((r) => r.id === booking.room_id) : null;
 
   const formatCurrency = (value) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
     }).format(value);
   };
 
@@ -34,14 +54,14 @@ export function InvoiceViewModal({ isOpen, onClose, invoice }) {
 
   const handleDownload = () => {
     // In a real app, this would generate a PDF
-    alert('PDF download functionality would be implemented here');
+    alert("PDF download functionality would be implemented here");
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-background">
         <DialogHeader className="print:hidden">
-          <DialogTitle>Invoice {invoice.invoiceNumber}</DialogTitle>
+          <DialogTitle>Tax Invoice </DialogTitle>
         </DialogHeader>
 
         {/* Printable Invoice Content */}
@@ -49,19 +69,33 @@ export function InvoiceViewModal({ isOpen, onClose, invoice }) {
           {/* Header */}
           <div className="flex justify-between items-start border-b pb-4">
             <div>
-              <h1 className="text-2xl font-display font-bold text-primary">{settings.name}</h1>
-              <p className="text-sm text-muted-foreground mt-1">{settings.address}</p>
-              <p className="text-sm text-muted-foreground">{settings.phone} | {settings.email}</p>
-              <p className="text-sm text-muted-foreground">GST: {settings.gstNumber}</p>
+              <h1 className="text-2xl font-display font-bold text-primary">
+                {settings?.general?.name}
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                {settings?.general?.address}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {settings?.general?.phone} | {settings?.general?.email}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                GST: {settings?.general?.gst_number}
+              </p>
             </div>
             <div className="text-right">
               <h2 className="text-xl font-bold">INVOICE</h2>
-              <p className="text-sm font-medium">{invoice.invoiceNumber}</p>
+              <p className="text-sm font-medium">{invoice.invoice_number}</p>
               <p className="text-sm text-muted-foreground">
-                Date: {format(new Date(invoice.createdAt), 'dd/MM/yyyy')}
+                Date: {format(new Date(invoice.created_at), "dd/MM/yyyy")}
               </p>
-              <Badge className={invoice.paymentStatus === 'paid' ? 'bg-green-100 text-green-700 mt-2' : 'bg-yellow-100 text-yellow-700 mt-2'}>
-                {invoice.paymentStatus.toUpperCase()}
+              <Badge
+                className={
+                  invoice.payment_status === "paid"
+                    ? "bg-green-100 text-green-700 mt-2"
+                    : "bg-yellow-100 text-yellow-700 mt-2"
+                }
+              >
+                {invoice.payment_status.toUpperCase()}
               </Badge>
             </div>
           </div>
@@ -70,23 +104,31 @@ export function InvoiceViewModal({ isOpen, onClose, invoice }) {
           <div className="grid grid-cols-2 gap-6">
             <div>
               <h3 className="font-semibold mb-2">Bill To:</h3>
-              <p className="font-medium">{customer?.name}</p>
-              <p className="text-sm text-muted-foreground">{customer?.phone}</p>
+              <p className="font-medium">{customer?.full_name}</p>
+              <p className="text-sm text-muted-foreground">
+                {customer?.contact_number}
+              </p>
               <p className="text-sm text-muted-foreground">{customer?.email}</p>
               {customer?.gstNumber && (
-                <p className="text-sm text-muted-foreground">GST: {customer.gstNumber}</p>
+                <p className="text-sm text-muted-foreground">
+                  GST: {customer.gstNumber}
+                </p>
               )}
             </div>
             <div>
               <h3 className="font-semibold mb-2">Stay Details:</h3>
-              <p className="text-sm">Room: {room?.roomNumber} ({room?.type})</p>
+              <p className="text-sm">
+                Room: {room?.room_number} ({room?.type})
+              </p>
               {booking && (
                 <>
                   <p className="text-sm text-muted-foreground">
-                    Check-in: {format(new Date(booking.checkIn), 'dd/MM/yyyy')}
+                    Check-in:{" "}
+                    {format(new Date(booking.check_in_date), "dd/MM/yyyy")}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Check-out: {format(new Date(booking.checkOut), 'dd/MM/yyyy')}
+                    Check-out:{" "}
+                    {format(new Date(booking.check_out_date), "dd/MM/yyyy")}
                   </p>
                 </>
               )}
@@ -97,22 +139,36 @@ export function InvoiceViewModal({ isOpen, onClose, invoice }) {
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="py-2 px-3 text-left text-sm font-semibold">Description</th>
-                <th className="py-2 px-3 text-center text-sm font-semibold">Qty</th>
-                <th className="py-2 px-3 text-right text-sm font-semibold">Rate</th>
-                <th className="py-2 px-3 text-right text-sm font-semibold">Amount</th>
+                <th className="py-2 px-3 text-left text-sm font-semibold">
+                  Description
+                </th>
+                <th className="py-2 px-3 text-center text-sm font-semibold">
+                  Qty
+                </th>
+                <th className="py-2 px-3 text-right text-sm font-semibold">
+                  Rate
+                </th>
+                <th className="py-2 px-3 text-right text-sm font-semibold">
+                  Amount
+                </th>
               </tr>
             </thead>
-            <tbody>
+            {/* <tbody>
               {invoice.items.map((item, index) => (
                 <tr key={index} className="border-b">
                   <td className="py-2 px-3 text-sm">{item.description}</td>
-                  <td className="py-2 px-3 text-center text-sm">{item.quantity}</td>
-                  <td className="py-2 px-3 text-right text-sm">{formatCurrency(item.unitPrice)}</td>
-                  <td className="py-2 px-3 text-right text-sm">{formatCurrency(item.total)}</td>
+                  <td className="py-2 px-3 text-center text-sm">
+                    {item.quantity}
+                  </td>
+                  <td className="py-2 px-3 text-right text-sm">
+                    {formatCurrency(item.unitPrice)}
+                  </td>
+                  <td className="py-2 px-3 text-right text-sm">
+                    {formatCurrency(item.total)}
+                  </td>
                 </tr>
               ))}
-            </tbody>
+            </tbody> */}
           </table>
 
           {/* Totals */}
@@ -123,22 +179,22 @@ export function InvoiceViewModal({ isOpen, onClose, invoice }) {
                 <span>{formatCurrency(invoice.subtotal)}</span>
               </div>
               <div className="flex justify-between text-sm text-muted-foreground">
-                <span>CGST ({settings.gstRates.cgst}%):</span>
-                <span>{formatCurrency(invoice.cgst)}</span>
+                <span>CGST ({settings?.gst_rates.cgst}%):</span>
+                <span>{formatCurrency(invoice.cgst_amount)}</span>
               </div>
               <div className="flex justify-between text-sm text-muted-foreground">
-                <span>SGST ({settings.gstRates.sgst}%):</span>
-                <span>{formatCurrency(invoice.sgst)}</span>
+                <span>SGST ({settings?.gst_rates.sgst}%):</span>
+                <span>{formatCurrency(invoice.sgst_amount)}</span>
               </div>
-              {invoice.igst > 0 && (
+              {invoice.igst_amount > 0 && (
                 <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>IGST ({settings.gstRates.igst}%):</span>
-                  <span>{formatCurrency(invoice.igst)}</span>
+                  <span>IGST ({settings?.gst_rates.igst}%):</span>
+                  <span>{formatCurrency(invoice.igst_amount)}</span>
                 </div>
               )}
               <div className="flex justify-between font-bold text-lg border-t pt-2">
                 <span>Grand Total:</span>
-                <span>{formatCurrency(invoice.grandTotal)}</span>
+                <span>{formatCurrency(invoice.grand_total)}</span>
               </div>
             </div>
           </div>
@@ -151,13 +207,13 @@ export function InvoiceViewModal({ isOpen, onClose, invoice }) {
             </div>
             <div className="flex justify-between text-sm">
               <span>Amount Paid:</span>
-              <span>{formatCurrency(invoice.paidAmount)}</span>
+              <span>{formatCurrency(invoice.amount_paid)}</span>
             </div>
           </div>
 
           {/* Footer */}
           <div className="text-center border-t pt-4 text-sm text-muted-foreground">
-            <p>Thank you for staying at {settings.name}!</p>
+            <p>Thank you for staying at {settings?.general?.name}!</p>
             <p>We look forward to welcoming you again.</p>
           </div>
         </div>

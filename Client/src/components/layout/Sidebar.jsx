@@ -1,9 +1,13 @@
-import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AppContext';
-import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AppContext";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   LayoutDashboard,
   BedDouble,
@@ -16,18 +20,43 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Hotel
-} from 'lucide-react';
+  Hotel,
+} from "lucide-react";
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-  { icon: BedDouble, label: 'Rooms', path: '/rooms', permission: 'rooms' },
-  { icon: Calendar, label: 'Bookings', path: '/bookings', permission: 'bookings' },
-  { icon: Users, label: 'Customers', path: '/customers', permission: 'customers' },
-  { icon: Receipt, label: 'Billing', path: '/billing', permission: 'billing' },
-  { icon: MessageSquare, label: 'Messages', path: '/messages', permission: 'messages' },
-  { icon: UserCog, label: 'Users', path: '/users', permission: 'users' },
-  { icon: Settings, label: 'Settings', path: '/settings', permission: 'settings' },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+  { icon: BedDouble, label: "Rooms", path: "/rooms", permission: "rooms.view" },
+  {
+    icon: Calendar,
+    label: "Bookings",
+    path: "/bookings",
+    permission: "bookings.view",
+  },
+  {
+    icon: Users,
+    label: "Customers",
+    path: "/customers",
+    permission: "customers.view",
+  },
+  {
+    icon: Receipt,
+    label: "Billing",
+    path: "/billing",
+    permission: "invoices.view",
+  },
+  {
+    icon: MessageSquare,
+    label: "Messages",
+    path: "/messages",
+    permission: "messages.view",
+  },
+  { icon: UserCog, label: "Users", path: "/users", permission: "users.view" },
+  {
+    icon: Settings,
+    label: "Settings",
+    path: "/settings",
+    permission: "settings.view",
+  },
 ];
 
 export function Sidebar() {
@@ -36,29 +65,33 @@ export function Sidebar() {
   const location = useLocation();
   const { user, logout, hasPermission } = useAuth();
 
-  const filteredNavItems = navItems.filter(item => 
-    !item.permission || hasPermission(item.permission)
+  const filteredNavItems = navItems.filter(
+    (item) => !item.permission || hasPermission(item.permission)
   );
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   return (
-    <div className={cn(
-      "fixed left-0 top-0 h-full bg-sidebar text-sidebar-foreground transition-all duration-300 z-50 flex flex-col",
-      collapsed ? "w-20" : "w-64"
-    )}>
+    <div
+      className={cn(
+        "fixed left-0 top-0 h-full bg-sidebar text-sidebar-foreground transition-all duration-300 z-50 flex flex-col",
+        collapsed ? "w-20" : "w-64"
+      )}
+    >
       {/* Logo */}
       <div className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-sidebar-primary flex items-center justify-center">
-            <Hotel className="h-6 w-6 text-sidebar-primary-foreground" />
+          <div className="w-10 h-10 rounded-lg  flex items-center justify-center">
+            <img src="/HMS_Logo.png" alt="Logo" className="w-10 h-10" />
           </div>
           {!collapsed && (
             <div className="animate-fade-in">
-              <h1 className="font-display text-lg font-bold text-sidebar-primary">Vrindavan</h1>
+              <h1 className="font-display text-lg font-bold text-sidebar-primary">
+                Vrindavan
+              </h1>
               <p className="text-xs text-sidebar-foreground/70">Palace Hotel</p>
             </div>
           )}
@@ -70,7 +103,7 @@ export function Sidebar() {
         {filteredNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
-          
+
           const button = (
             <Button
               key={item.path}
@@ -82,7 +115,9 @@ export function Sidebar() {
               )}
               onClick={() => navigate(item.path)}
             >
-              <Icon className={cn("h-5 w-5", isActive && "text-sidebar-primary")} />
+              <Icon
+                className={cn("h-5 w-5", isActive && "text-sidebar-primary")}
+              />
               {!collapsed && <span>{item.label}</span>}
             </Button>
           );
@@ -90,10 +125,11 @@ export function Sidebar() {
           if (collapsed) {
             return (
               <Tooltip key={item.path} delayDuration={0}>
-                <TooltipTrigger asChild>
-                  {button}
-                </TooltipTrigger>
-                <TooltipContent side="right" className="bg-popover text-popover-foreground">
+                <TooltipTrigger asChild>{button}</TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="bg-popover text-popover-foreground"
+                >
                   {item.label}
                 </TooltipContent>
               </Tooltip>
@@ -109,10 +145,12 @@ export function Sidebar() {
         {user && !collapsed && (
           <div className="px-3 py-2 rounded-lg bg-sidebar-accent/50">
             <p className="font-medium text-sm">{user.name}</p>
-            <p className="text-xs text-sidebar-foreground/70 capitalize">{user.role}</p>
+            <p className="text-xs text-sidebar-foreground/70 capitalize">
+              {user.role}
+            </p>
           </div>
         )}
-        
+
         <div className={cn("flex gap-2", collapsed ? "flex-col" : "")}>
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
@@ -125,7 +163,10 @@ export function Sidebar() {
                 <LogOut className="h-5 w-5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right" className="bg-popover text-popover-foreground">
+            <TooltipContent
+              side="right"
+              className="bg-popover text-popover-foreground"
+            >
               Logout
             </TooltipContent>
           </Tooltip>
@@ -138,11 +179,18 @@ export function Sidebar() {
                 className="text-sidebar-foreground hover:bg-sidebar-accent ml-auto"
                 onClick={() => setCollapsed(!collapsed)}
               >
-                {collapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+                {collapsed ? (
+                  <ChevronRight className="h-5 w-5" />
+                ) : (
+                  <ChevronLeft className="h-5 w-5" />
+                )}
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right" className="bg-popover text-popover-foreground">
-              {collapsed ? 'Expand' : 'Collapse'}
+            <TooltipContent
+              side="right"
+              className="bg-popover text-popover-foreground"
+            >
+              {collapsed ? "Expand" : "Collapse"}
             </TooltipContent>
           </Tooltip>
         </div>
