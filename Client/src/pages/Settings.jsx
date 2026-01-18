@@ -315,7 +315,7 @@ export default function Settings() {
         )}
 
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-5">
             <TabsTrigger value="general">
               <Building2 className="h-4 w-4 mr-2" />
               General

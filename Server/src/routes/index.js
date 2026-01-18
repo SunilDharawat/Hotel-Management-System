@@ -10,6 +10,10 @@ const bookingRoutes = require("./bookings");
 const invoiceRoutes = require("./invoices");
 const paymentRoutes = require("./payments");
 const settingsRoutes = require("./settings");
+const smsRoutes = require("./sms");
+const templateRoutes = require("./templates");
+const notificationRoutes = require("./notifications");
+const reportRoutes = require("./reports");
 
 // Mount routes
 router.use("/auth", authRoutes);
@@ -20,6 +24,10 @@ router.use("/bookings", bookingRoutes);
 router.use("/invoices", invoiceRoutes);
 router.use("/payments", paymentRoutes);
 router.use("/settings", settingsRoutes);
+router.use("/sms", smsRoutes);
+router.use("/templates", templateRoutes);
+router.use("/notifications", notificationRoutes);
+router.use("/reports", reportRoutes);
 
 // Health check
 router.get("/health", (req, res) => {

@@ -33,7 +33,11 @@ export const bookingsAPI = {
     return await api.get("/bookings/today/arrivals");
   },
 
-  getTodayDepartures: async () => {
+getTodayDepartures: async () => {
     return await api.get("/bookings/today/departures");
+  },
+
+  getActive: async () => {
+    return await api.get("/bookings/active");
   },
 };

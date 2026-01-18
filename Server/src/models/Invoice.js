@@ -1,6 +1,7 @@
 const db = require("../config/database");
 const { v4: uuidv4 } = require("uuid");
 const { generateInvoiceNumber, calculateGST } = require("../utils/helper");
+const Setting = require("./Setting");
 
 class Invoice {
   /**
@@ -90,8 +91,14 @@ class Invoice {
         subtotal += parseFloat(item.total_price);
       });
 
+      const gstSetting = await Setting.getByKey("gst_rates");
+
       // Calculate GST
-      const gstData = calculateGST(subtotal);
+      const gstData = calculateGST(subtotal, {
+        cgstRate: Number(gstSetting?.setting_value?.cgst || 0),
+        sgstRate: Number(gstSetting?.setting_value?.sgst || 0),
+        igstRate: Number(gstSetting?.setting_value?.igst || 0),
+      });
 
       // Calculate grand total
       const grandTotal = subtotal + gstData.total_gst;

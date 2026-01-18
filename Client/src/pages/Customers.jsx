@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Plus, Mail, Phone, User } from "lucide-react";
+import { Search, Plus, Mail, Phone, User, DockIcon } from "lucide-react";
 import { customersAPI } from "@/api/customers";
 import { bookingsAPI } from "@/api/bookings";
 
@@ -19,10 +19,11 @@ export default function Customers() {
   });
 
   const { data: bookings, isLoading: bookingsLoading } = useQuery({
-    queryKey: ["bookings", { limit: 5 }],
-    queryFn: () => bookingsAPI.getAll({ limit: 5 }),
+    queryKey: ["bookings"],
+    queryFn: () => bookingsAPI.getAll(),
     select: (response) => response.data.bookings,
   });
+
   const [search, setSearch] = useState("");
 
   const filteredCustomers = customers?.filter(
@@ -55,7 +56,7 @@ export default function Customers() {
       <div className="space-y-6 animate-fade-in">
         <Card>
           <CardContent className="p-4">
-            <div className="flex gap-4 items-center">
+            <div className="flex flex-col md:flex-row gap-4 items-center">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -84,7 +85,7 @@ export default function Customers() {
             >
               <CardContent className="p-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-wrap items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                       <span className="font-semibold text-primary">
                         {customer.full_name
@@ -106,6 +107,13 @@ export default function Customers() {
                           <Phone className="h-3 w-3" />
                           {customer.contact_number}
                         </span>
+                        <Badge variant="outline" className="capitalize">
+                          {customer.id_proof_type.replace("_", " ")}
+                        </Badge>
+                        <span className="flex items-center gap-1">
+                          <DockIcon className="h-3 w-3" />
+                          {customer.id_proof_number}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -124,9 +132,6 @@ export default function Customers() {
                         Total Spent
                       </p>
                     </div>
-                    <Badge variant="outline" className="capitalize">
-                      {customer.id_proof_type.replace("_", " ")}
-                    </Badge>
                   </div>
                 </div>
               </CardContent>

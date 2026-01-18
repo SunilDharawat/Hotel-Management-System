@@ -233,7 +233,7 @@ class Customer {
     );
   }
 
-  /**
+/**
    * Get customer booking history
    */
   static async getBookingHistory(customerId) {
@@ -246,6 +246,16 @@ class Customer {
        WHERE b.customer_id = ?
        ORDER BY b.created_at DESC`,
       [customerId]
+    );
+    return rows;
+  }
+
+  /**
+   * Get all customers
+   */
+  static async getAll() {
+    const [rows] = await db.execute(
+      "SELECT * FROM customers ORDER BY created_at DESC"
     );
     return rows;
   }

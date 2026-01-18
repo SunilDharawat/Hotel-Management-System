@@ -477,7 +477,7 @@ class Booking {
     return rows;
   }
 
-  /**
+/**
    * Get today's check-outs
    */
   static async getTodayCheckOuts() {
@@ -494,6 +494,50 @@ class Booking {
       []
     );
     return rows;
+  }
+
+  /**
+   * Get bookings by date range
+   */
+  static async getByDateRange(startDate, endDate) {
+    const [rows] = await db.execute(
+      `SELECT b.*, 
+        c.full_name as customer_name, c.contact_number as customer_phone,
+        r.room_number, r.type as room_type
+       FROM bookings b
+       LEFT JOIN customers c ON b.customer_id = c.id
+       LEFT JOIN rooms r ON b.room_id = r.id
+       WHERE (b.check_in_date BETWEEN ? AND ? 
+              OR b.check_out_date BETWEEN ? AND ?
+              OR (b.check_in_date <= ? AND b.check_out_date >= ?))
+       ORDER BY b.check_in_date`,
+      [startDate, endDate, startDate, endDate, startDate, endDate]
+    );
+    return rows;
+  }
+
+  /**
+   * Get active bookings (currently checked in)
+   */
+  static async getActive() {
+    const [rows] = await db.execute(
+      `SELECT b.*, 
+        c.full_name as customer_name, c.contact_number as customer_phone,
+        r.room_number, r.type as room_type
+       FROM bookings b
+       LEFT JOIN customers c ON b.customer_id = c.id
+       LEFT JOIN rooms r ON b.room_id = r.id
+       WHERE b.status = 'checked_in'
+       ORDER BY b.check_in_date DESC`
+    );
+    return rows;
+  }
+
+  /**
+   * Get booking by ID (alias for findById)
+   */
+  static async getById(id) {
+    return this.findById(id);
   }
 }
 

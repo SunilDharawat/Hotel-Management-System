@@ -140,10 +140,48 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
+/**
+ * Reset user password (admin only)
+ */
+const resetPassword = async (req, res, next) => {
+  try {
+    const userId = req.params.id;
+    const { newPassword } = req.body;
+
+    // Check if user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return ApiResponse.notFound(res, "User not found");
+    }
+
+    // Prevent self-password reset
+    if (userId === req.user.id) {
+      return ApiResponse.badRequest(res, "You cannot reset your own password. Use the profile settings instead.");
+    }
+
+    // Validate new password
+    if (!newPassword) {
+      return ApiResponse.badRequest(res, "New password is required");
+    }
+
+    if (newPassword.length < 6) {
+      return ApiResponse.badRequest(res, "Password must be at least 6 characters long");
+    }
+
+    // Update password
+    await User.update(userId, { password: newPassword });
+
+    ApiResponse.success(res, null, "Password reset successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
   createUser,
   updateUser,
   deleteUser,
+  resetPassword,
 };

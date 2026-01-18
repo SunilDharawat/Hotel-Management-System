@@ -2,6 +2,9 @@ const Invoice = require("../models/Invoice");
 const Booking = require("../models/Booking");
 const Customer = require("../models/Customer");
 const ApiResponse = require("../utils/response");
+const Setting = require("../models/Setting");
+const PDFService = require("../services/pdfService");
+const NotificationService = require("../services/NotificationService");
 
 /**
  * Get all invoices
@@ -85,21 +88,36 @@ const createInvoiceFromBooking = async (req, res, next) => {
     // Check if invoice already exists for this booking
     const [existing] = await require("../config/database").execute(
       "SELECT id FROM invoices WHERE booking_id = ?",
-      [booking_id]
+      [booking_id],
     );
 
     if (existing.length > 0) {
       return ApiResponse.conflict(
         res,
-        "Invoice already exists for this booking"
+        "Invoice already exists for this booking",
       );
     }
 
     const invoice = await Invoice.createFromBooking(
       booking_id,
       additional_items || [],
-      req.user.id
+      req.user.id,
     );
+
+    // Get booking details for notification
+    const bookings = await Booking.findById(booking_id);
+    if (bookings) {
+      const customer = await Customer.findById(bookings.customer_id);
+      if (customer) {
+        // Create notification for invoice created
+        const customerName = customer?.full_name || "Unknown Customer";
+        await NotificationService.onInvoiceCreated(
+          invoice,
+          customerName,
+          invoice.grand_total,
+        );
+      }
+    }
 
     ApiResponse.created(res, invoice, "Invoice created successfully");
   } catch (error) {
@@ -127,7 +145,7 @@ const createManualInvoice = async (req, res, next) => {
     const invoice = await Invoice.create(
       { customer_id, discount_amount },
       items,
-      req.user.id
+      req.user.id,
     );
 
     ApiResponse.created(res, invoice, "Invoice created successfully");
@@ -168,10 +186,85 @@ const getInvoiceStats = async (req, res, next) => {
         COUNT(CASE WHEN payment_status = 'partial' THEN 1 END) as partial_count
        FROM invoices
        WHERE DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)`,
-      []
+      [],
     );
 
     ApiResponse.success(res, stats[0]);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Download invoice PDF
+ */
+const downloadInvoicePDF = async (req, res, next) => {
+  try {
+    const invoiceId = req.params.id;
+
+    // Get invoice with all details
+    const invoice = await Invoice.findByIdWithItems(invoiceId);
+
+    if (!invoice) {
+      return ApiResponse.notFound(res, "Invoice not found");
+    }
+    // Get booking details
+    const Booking = require("../models/Booking");
+    const booking = await Booking.findById(invoice.booking_id);
+    invoice.booking = booking;
+
+    // Get settings for hotel info
+    const settings = await Setting.getAllAsObject();
+
+    // Generate PDF
+    const { filepath, filename } = await PDFService.generateInvoicePDF(
+      invoice,
+      settings,
+    );
+
+    // Send file
+    res.download(filepath, filename, (err) => {
+      if (err) {
+        console.error("Error downloading PDF:", err);
+        return ApiResponse.error(res, "Failed to download PDF");
+      }
+
+      // Optionally delete file after download
+      // fs.unlinkSync(filepath);
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * View invoice PDF in browser
+ */
+const viewInvoicePDF = async (req, res, next) => {
+  try {
+    const invoiceId = req.params.id;
+
+    // Get invoice with all details
+    const invoice = await Invoice.findByIdWithItems(invoiceId);
+
+    if (!invoice) {
+      return ApiResponse.notFound(res, "Invoice not found");
+    }
+
+    // Get booking details
+    const Booking = require("../models/Booking");
+    const booking = await Booking.findById(invoice.booking_id);
+    invoice.booking = booking;
+
+    // Get settings
+    const settings = await Setting.getAllAsObject();
+
+    // Generate PDF
+    const { filepath } = await PDFService.generateInvoicePDF(invoice, settings);
+
+    // Send file to view in browser
+    res.contentType("application/pdf");
+    res.sendFile(filepath);
   } catch (error) {
     next(error);
   }
@@ -184,4 +277,6 @@ module.exports = {
   createManualInvoice,
   getPendingInvoices,
   getInvoiceStats,
+  downloadInvoicePDF,
+  viewInvoicePDF,
 };

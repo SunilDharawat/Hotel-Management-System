@@ -57,4 +57,20 @@ router.post(
   invoiceController.createManualInvoice
 );
 
+// Download invoice PDF
+router.get(
+  "/:id/download",
+  validateInvoiceId,
+  hasPermission("invoices", "view"),
+  invoiceController.downloadInvoicePDF
+);
+
+// View invoice PDF in browser
+router.get(
+  "/:id/pdf",
+  validateInvoiceId,
+  hasPermission("invoices", "view"),
+  invoiceController.viewInvoicePDF
+);
+
 module.exports = router;

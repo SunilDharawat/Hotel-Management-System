@@ -73,6 +73,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppProvider } from "./contexts/AppContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { PERMISSIONS } from "./utils/permissions";
 
@@ -84,10 +85,12 @@ import NewCustomer from "./pages/NewCustomer";
 import Bookings from "./pages/Bookings";
 import NewBooking from "./pages/NewBooking";
 import Billing from "./pages/Billing";
-// import Messages from "./pages/Messages";
+import Messages from "./pages/Messages";
 import Users from "./pages/Users";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import NewRoom from "./pages/NewRoom";
+import Reports from "./pages/Reports";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -102,9 +105,10 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AppProvider>
-      <TooltipProvider>
-        <Sonner />
-        <BrowserRouter>
+      <NotificationProvider>
+        <TooltipProvider>
+          <Sonner />
+          <BrowserRouter>
           <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
@@ -123,6 +127,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredPermission={PERMISSIONS.VIEW_ROOMS}>
                   <Rooms />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/rooms/new"
+              element={
+                <ProtectedRoute requiredPermission={PERMISSIONS.CREATE_ROOM}>
+                  <NewRoom />
                 </ProtectedRoute>
               }
             />
@@ -174,14 +186,14 @@ const App = () => (
               }
             />
 
-            {/*           <Route
+            <Route
               path="/messages"
               element={
                 <ProtectedRoute>
                   <Messages />
                 </ProtectedRoute>
               }
-            /> */}
+            />
 
             <Route
               path="/users"
@@ -201,11 +213,21 @@ const App = () => (
               }
             />
 
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute requiredPermission={PERMISSIONS.VIEW_REPORTS}>
+                  <Reports />
+                </ProtectedRoute>
+              }
+            />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
-    </AppProvider>
+    </NotificationProvider>
+  </AppProvider>
   </QueryClientProvider>
 );
 

@@ -1,6 +1,8 @@
 const Payment = require("../models/Payment");
 const Invoice = require("../models/Invoice");
+const Customer = require("../models/Customer");
 const ApiResponse = require("../utils/response");
+const NotificationService = require("../services/NotificationService");
 
 /**
  * Get all payments
@@ -87,14 +89,14 @@ const createPayment = async (req, res, next) => {
     if (paymentAmount <= 0) {
       return ApiResponse.badRequest(
         res,
-        "Payment amount must be greater than zero"
+        "Payment amount must be greater than zero",
       );
     }
 
     if (paymentAmount > amountDue) {
       return ApiResponse.badRequest(
         res,
-        `Payment amount cannot exceed due amount of ₹${amountDue}`
+        `Payment amount cannot exceed due amount of ₹${amountDue}`,
       );
     }
 
@@ -104,6 +106,17 @@ const createPayment = async (req, res, next) => {
     };
 
     const payment = await Payment.create(paymentData, req.user.id);
+
+    // Get customer details for notification
+    const customer = await Customer.findById(invoice.customer_id);
+
+    // Create notification for payment received
+    const customerName = customer?.full_name || "Unknown Customer";
+    await NotificationService.onPaymentReceived(
+      payment,
+      customerName,
+      payment.amount,
+    );
 
     ApiResponse.created(res, payment, "Payment recorded successfully");
   } catch (error) {

@@ -266,11 +266,33 @@ class Payment {
       []
     );
 
-    return {
+return {
       total_transactions: total[0].count,
       total_amount: parseFloat(total[0].total),
       by_method: rows,
     };
+  }
+
+  /**
+   * Get payments by date range
+   */
+  static async getByDateRange(startDate, endDate) {
+    const [rows] = await db.execute(
+      `SELECT p.*, 
+        i.booking_id,
+        b.customer_id,
+        c.full_name as customer_name,
+        r.type as room_type
+       FROM payments p
+       LEFT JOIN invoices i ON p.invoice_id = i.id
+       LEFT JOIN bookings b ON i.booking_id = b.id
+       LEFT JOIN customers c ON b.customer_id = c.id
+       LEFT JOIN rooms r ON b.room_id = r.id
+       WHERE DATE(p.payment_date) BETWEEN ? AND ?
+       ORDER BY p.payment_date DESC`,
+      [startDate, endDate]
+    );
+    return rows;
   }
 }
 

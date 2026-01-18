@@ -20,4 +20,8 @@ export const usersAPI = {
   delete: async (id) => {
     return await api.delete(`/users/${id}`);
   },
+
+  resetPassword: async (id, newPassword) => {
+    return await api.post(`/users/${id}/reset-password`, { newPassword });
+  },
 };

@@ -10,16 +10,16 @@ export function AppProvider({ children }) {
 
   // Load user from localStorage on mount
   useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("auth_token");
+const savedUser = sessionStorage.getItem("user");
+    const token = sessionStorage.getItem("auth_token");
 
     if (savedUser && token) {
       try {
         setUser(JSON.parse(savedUser));
       } catch (error) {
         console.error("Failed to parse user data:", error);
-        localStorage.removeItem("user");
-        localStorage.removeItem("auth_token");
+sessionStorage.removeItem("user");
+        sessionStorage.removeItem("auth_token");
       }
     }
     setIsLoading(false);
@@ -50,7 +50,7 @@ export function AppProvider({ children }) {
 
   const updateUser = (userData) => {
     setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
+    sessionStorage.setItem("user", JSON.stringify(userData));
   };
 
   return (

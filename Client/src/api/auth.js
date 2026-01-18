@@ -4,8 +4,8 @@ export const authAPI = {
   login: async (credentials) => {
     const response = await api.post("/auth/login", credentials);
     if (response.success && response.data.token) {
-      localStorage.setItem("auth_token", response.data.token);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
+sessionStorage.setItem("auth_token", response.data.token);
+      sessionStorage.setItem("user", JSON.stringify(response.data.user));
     }
     return response;
   },
@@ -27,7 +27,7 @@ export const authAPI = {
   },
 
   logout: () => {
-    localStorage.removeItem("auth_token");
-    localStorage.removeItem("user");
+sessionStorage.removeItem("auth_token");
+    sessionStorage.removeItem("user");
   },
 };

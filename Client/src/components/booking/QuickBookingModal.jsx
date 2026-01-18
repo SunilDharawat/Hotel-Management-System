@@ -750,7 +750,7 @@ export function QuickBookingModal({ isOpen, onClose, room }) {
                       onValueChange={setSelectedCustomerId}
                       disabled={isProcessing}
                     >
-                      <SelectTrigger className="bg-background">
+                      <SelectTrigger className="bg-background w-full">
                         <SelectValue placeholder="Choose a guest" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">

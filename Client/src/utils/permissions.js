@@ -44,6 +44,12 @@ export const PERMISSIONS = {
 
   // Reports
   VIEW_REPORTS: "reports.view",
+
+  // SMS
+  VIEW_SMS: "sms.view",
+  CREATE_SMS: "sms.create",
+  EDIT_SMS: "sms.edit",
+  DELETE_SMS: "sms.delete",
 };
 
 // Role-based permissions mapping

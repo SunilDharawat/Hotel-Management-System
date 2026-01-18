@@ -27,6 +27,13 @@ router.get(
   bookingController.getTodayDepartures
 );
 
+// Get active bookings (currently checked in)
+router.get(
+  "/active",
+  hasPermission("bookings", "view"),
+  bookingController.getActiveBookings
+);
+
 // Get all bookings
 router.get(
   "/",

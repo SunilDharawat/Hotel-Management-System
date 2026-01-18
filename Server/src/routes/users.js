@@ -48,4 +48,12 @@ router.delete(
   userController.deleteUser
 );
 
+// Reset user password (admin only)
+router.post(
+  "/:id/reset-password",
+  validateUserId,
+  hasPermission("users", "edit"),
+  userController.resetPassword
+);
+
 module.exports = router;

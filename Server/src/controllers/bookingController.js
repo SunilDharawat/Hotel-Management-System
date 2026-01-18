@@ -2,6 +2,7 @@ const Booking = require("../models/Booking");
 const Room = require("../models/Room");
 const Customer = require("../models/Customer");
 const ApiResponse = require("../utils/response");
+const NotificationService = require("../services/NotificationService");
 
 /**
  * Get all bookings
@@ -93,6 +94,15 @@ const createBooking = async (req, res, next) => {
 
     const booking = await Booking.create(bookingData, req.user.id);
 
+    // Create notification for new booking
+    const customerName = customer?.full_name || "Unknown Customer";
+    const roomNumber = room?.room_number || "Unknown Room";
+    await NotificationService.onBookingCreated(
+      booking,
+      customerName,
+      roomNumber,
+    );
+
     ApiResponse.created(res, booking, "Booking created successfully");
   } catch (error) {
     if (error.message === "Room is not available for the selected dates") {
@@ -149,7 +159,7 @@ const cancelBooking = async (req, res, next) => {
     const booking = await Booking.cancel(
       req.params.id,
       cancellation_reason,
-      req.user.id
+      req.user.id,
     );
 
     ApiResponse.success(res, booking, "Booking cancelled successfully");
@@ -166,7 +176,21 @@ const cancelBooking = async (req, res, next) => {
  */
 const checkIn = async (req, res, next) => {
   try {
+    // Get booking details before check-in for notification
+    const existingBooking = await Booking.findById(req.params.id);
+    if (!existingBooking) {
+      return ApiResponse.notFound(res, "Booking not found");
+    }
+
+    const customer = await Customer.findById(existingBooking.customer_id);
+    const room = await Room.findById(existingBooking.room_id);
+
     const booking = await Booking.checkIn(req.params.id);
+
+    // Create notification for check-in
+    const customerName = customer?.full_name || "Unknown Customer";
+    const roomNumber = room?.room_number || "Unknown Room";
+    await NotificationService.onCheckIn(booking, customerName, roomNumber);
 
     ApiResponse.success(res, booking, "Check-in successful");
   } catch (error) {
@@ -185,7 +209,21 @@ const checkIn = async (req, res, next) => {
  */
 const checkOut = async (req, res, next) => {
   try {
+    // Get booking details before check-out for notification
+    const existingBooking = await Booking.findById(req.params.id);
+    if (!existingBooking) {
+      return ApiResponse.notFound(res, "Booking not found");
+    }
+
+    const customer = await Customer.findById(existingBooking.customer_id);
+    const room = await Room.findById(existingBooking.room_id);
+
     const booking = await Booking.checkOut(req.params.id);
+
+    // Create notification for check-out
+    const customerName = customer?.full_name || "Unknown Customer";
+    const roomNumber = room?.room_number || "Unknown Room";
+    await NotificationService.onCheckOut(booking, customerName, roomNumber);
 
     ApiResponse.success(res, booking, "Check-out successful");
   } catch (error) {
@@ -230,6 +268,22 @@ const getTodayDepartures = async (req, res, next) => {
   }
 };
 
+/**
+ * Get active bookings (currently checked in)
+ */
+const getActiveBookings = async (req, res, next) => {
+  try {
+    const activeBookings = await Booking.getActive();
+
+    ApiResponse.success(res, {
+      bookings: activeBookings,
+      count: activeBookings.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAllBookings,
   getBookingById,
@@ -240,4 +294,5 @@ module.exports = {
   checkOut,
   getTodayArrivals,
   getTodayDepartures,
+  getActiveBookings,
 };

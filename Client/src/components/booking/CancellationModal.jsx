@@ -324,7 +324,7 @@ export function CancellationModal({ isOpen, onClose, booking }) {
   });
 
   const policies = settings?.data?.policies || {};
-  const gstRates = settings?.data?.gst_rates || { cgst: 6, sgst: 6 };
+  const gstRates = settings?.data?.gst_rates || {};
 
   const isEarlyCheckout = booking.status === "checked_in";
   const today = new Date();

@@ -485,7 +485,7 @@ export default function NewBooking() {
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="col-span-2">
-                        <Label>Select Guest *</Label>
+                        <Label className="mb-1">Select Guest *</Label>
                         <Select
                           value={formData.customer_id}
                           onValueChange={(value) =>
@@ -493,7 +493,7 @@ export default function NewBooking() {
                           }
                           disabled={createBookingMutation.isPending}
                         >
-                          <SelectTrigger className="bg-background">
+                          <SelectTrigger className="bg-background w-full">
                             <SelectValue placeholder="Choose a guest" />
                           </SelectTrigger>
                           <SelectContent className="bg-popover">
@@ -517,7 +517,7 @@ export default function NewBooking() {
                       </div>
 
                       <div>
-                        <Label>Check-in Date *</Label>
+                        <Label className="mb-1">Check-in Date *</Label>
                         <Input
                           type="date"
                           value={formData.check_in_date}
@@ -533,7 +533,7 @@ export default function NewBooking() {
                       </div>
 
                       <div>
-                        <Label>Check-out Date *</Label>
+                        <Label className="mb-1">Check-out Date *</Label>
                         <Input
                           type="date"
                           value={formData.check_out_date}
@@ -549,7 +549,7 @@ export default function NewBooking() {
                       </div>
 
                       <div className="col-span-2">
-                        <Label>Select Room *</Label>
+                        <Label className="mb-1">Select Room *</Label>
                         <Select
                           value={formData.room_id}
                           onValueChange={(value) =>
@@ -557,7 +557,7 @@ export default function NewBooking() {
                           }
                           disabled={createBookingMutation.isPending}
                         >
-                          <SelectTrigger className="bg-background">
+                          <SelectTrigger className="bg-background w-full">
                             <SelectValue placeholder="Choose a room" />
                           </SelectTrigger>
                           <SelectContent className="bg-popover">
@@ -586,11 +586,11 @@ export default function NewBooking() {
                       </div>
 
                       <div>
-                        <Label>Number of Guests *</Label>
+                        <Label className="mb-1">Number of Guests *</Label>
                         <Input
                           type="number"
                           min="1"
-                          max={selectedRoom?.max_occupancy || 4}
+                          max={selectedRoom?.max_occupancy}
                           value={formData.number_of_guests}
                           onChange={(e) =>
                             setFormData({
@@ -600,10 +600,18 @@ export default function NewBooking() {
                           }
                           disabled={createBookingMutation.isPending}
                         />
+                        {selectedRoom &&
+                          formData.number_of_guests >
+                            selectedRoom.max_occupancy && (
+                            <p className="text-xs text-orange-600 mt-1 flex items-center gap-1">
+                              Maximum occupancy for this room is{" "}
+                              {selectedRoom.max_occupancy}
+                            </p>
+                          )}
                       </div>
 
                       <div>
-                        <Label>Advance Payment (₹)</Label>
+                        <Label className="mb-1">Advance Payment (₹)</Label>
                         <Input
                           type="number"
                           min="0"
@@ -620,7 +628,7 @@ export default function NewBooking() {
                       </div>
 
                       <div className="col-span-2">
-                        <Label>Special Requests</Label>
+                        <Label className="mb-1">Special Requests</Label>
                         <Textarea
                           value={formData.special_requests}
                           onChange={(e) =>

@@ -301,7 +301,7 @@ class Room {
     return this.findById(id);
   }
 
-  /**
+/**
    * Update housekeeping status
    */
   static async updateHousekeepingStatus(id, status) {
@@ -310,6 +310,16 @@ class Room {
       id,
     ]);
     return this.findById(id);
+  }
+
+  /**
+   * Get all rooms
+   */
+  static async getAll() {
+    const [rows] = await db.execute(
+      "SELECT * FROM rooms ORDER BY type, room_number"
+    );
+    return rows;
   }
 }
 
