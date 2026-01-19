@@ -13,8 +13,8 @@ import { bookingsAPI } from "@/api/bookings";
 export default function Customers() {
   const navigate = useNavigate();
   const { data: customers, isLoading: customersLoading } = useQuery({
-    queryKey: ["customers", { limit: 1 }],
-    queryFn: () => customersAPI.getAll({ limit: 10 }),
+    queryKey: ["customers"],
+    queryFn: () => customersAPI.getAll(),
     select: (response) => response.data.customers,
   });
 
@@ -30,7 +30,7 @@ export default function Customers() {
     (c) =>
       c.full_name.toLowerCase().includes(search.toLowerCase()) ||
       c.email.toLowerCase().includes(search.toLowerCase()) ||
-      c.contact_number.includes(search)
+      c.contact_number.includes(search),
   );
 
   const getCustomerBookings = (customerId) =>
