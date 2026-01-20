@@ -39,7 +39,7 @@ const generatePaymentNumber = () => {
 const calculateNights = (checkIn, checkOut) => {
   const oneDay = 24 * 60 * 60 * 1000;
   const diffDays = Math.round(
-    Math.abs((new Date(checkOut) - new Date(checkIn)) / oneDay)
+    Math.abs((new Date(checkOut) - new Date(checkIn)) / oneDay),
   );
   return diffDays;
 };
@@ -63,8 +63,6 @@ const calculateNights = (checkIn, checkOut) => {
 //   };
 // };
 const calculateGST = (amount, gstRates = {}) => {
-  console.log(gstRates, "g");
-
   const cgstRate = Number(gstRates.cgstRate ?? 0);
   const sgstRate = Number(gstRates.sgstRate ?? 0);
   const igstRate = Number(gstRates.igstRate ?? 0);
@@ -84,6 +82,48 @@ const calculateGST = (amount, gstRates = {}) => {
     igst_amount: Number(igst.toFixed(2)),
 
     total_gst: Number((cgst + sgst + igst).toFixed(2)),
+  };
+};
+
+const calculateGSTWithState = (
+  amount,
+  hotelState,
+  customerState,
+  gstRates = {},
+) => {
+  console.log(gstRates, hotelState, "g");
+  const cgstRate = Number(gstRates.cgst ?? 0);
+  const sgstRate = Number(gstRates.sgst ?? 0);
+  const igstRate = Number(gstRates.igst ?? 0);
+
+  // Check if same state (intra-state)
+  const isSameState =
+    String(hotelState?.state_id) === customerState?.gst_state_code;
+
+  console.log(isSameState);
+
+  let cgst = 0;
+  let sgst = 0;
+  let igst = 0;
+
+  if (isSameState) {
+    // Intra-state: Apply CGST + SGST
+    cgst = (amount * cgstRate) / 100;
+    sgst = (amount * sgstRate) / 100;
+  } else {
+    // Inter-state: Apply IGST
+    igst = (amount * igstRate) / 100;
+  }
+
+  return {
+    cgst_rate: isSameState ? cgstRate : 0,
+    cgst_amount: parseFloat(cgst.toFixed(2)),
+    sgst_rate: isSameState ? sgstRate : 0,
+    sgst_amount: parseFloat(sgst.toFixed(2)),
+    igst_rate: !isSameState ? igstRate : 0,
+    igst_amount: parseFloat(igst.toFixed(2)),
+    total_gst: parseFloat((cgst + sgst + igst).toFixed(2)),
+    is_interstate: !isSameState,
   };
 };
 /**
@@ -111,6 +151,7 @@ module.exports = {
   generatePaymentNumber,
   calculateNights,
   calculateGST,
+  calculateGSTWithState,
   formatCurrency,
   isValidDateRange,
 };

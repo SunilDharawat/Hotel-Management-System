@@ -138,6 +138,7 @@ export default function NewRoom() {
                       <SelectItem value="double">Double</SelectItem>
                       <SelectItem value="deluxe">Deluxe</SelectItem>
                       <SelectItem value="suite">Suite</SelectItem>
+                      <SelectItem value="hall">Hall</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

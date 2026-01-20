@@ -10,10 +10,10 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Printer, Download, X } from "lucide-react";
 import { customersAPI } from "@/api/customers";
-import { settingsAPI } from "@/api/settings";
 import { bookingsAPI } from "@/api/bookings";
 import { roomsAPI } from "@/api/rooms";
 import { useSettings } from "@/hooks/useSettings";
+import { invoicesAPI } from "@/api/invoices";
 
 export function InvoiceViewModal({ isOpen, onClose, invoice }) {
   const { data: rooms, isLoading: roomsLoading } = useQuery({
@@ -33,6 +33,13 @@ export function InvoiceViewModal({ isOpen, onClose, invoice }) {
     queryFn: () => customersAPI.getAll(),
     select: (response) => response.data.customers,
   });
+
+  const { data: invoiceItems, isLoading: invoiceItemsLoading } = useQuery({
+    queryKey: ["invoiceItems", invoice.id],
+    queryFn: () => invoicesAPI.getById(invoice.id),
+    select: (response) => response.data,
+  });
+
   const { data: settings, settingLoading, settingError } = useSettings();
 
   const customer = customers?.find((c) => c.id === invoice.customer_id);
@@ -48,15 +55,6 @@ export function InvoiceViewModal({ isOpen, onClose, invoice }) {
     }).format(value);
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const handleDownload = () => {
-    // In a real app, this would generate a PDF
-    alert("PDF download functionality would be implemented here");
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-background">
@@ -65,7 +63,7 @@ export function InvoiceViewModal({ isOpen, onClose, invoice }) {
         </DialogHeader>
 
         {/* Printable Invoice Content */}
-        <div id="invoice-content" className="space-y-6 p-6 bg-white print:p-0">
+        <div id="invoice-content" className="space-y-4 p-3 bg-white print:p-0">
           {/* Header */}
           <div className="flex justify-between items-start border-b pb-4">
             <div>
@@ -153,22 +151,22 @@ export function InvoiceViewModal({ isOpen, onClose, invoice }) {
                 </th>
               </tr>
             </thead>
-            {/* <tbody>
-              {invoice.items.map((item, index) => (
+            <tbody>
+              {invoiceItems?.items?.map((item, index) => (
                 <tr key={index} className="border-b">
                   <td className="py-2 px-3 text-sm">{item.description}</td>
                   <td className="py-2 px-3 text-center text-sm">
                     {item.quantity}
                   </td>
                   <td className="py-2 px-3 text-right text-sm">
-                    {formatCurrency(item.unitPrice)}
+                    {formatCurrency(item.unit_price)}
                   </td>
                   <td className="py-2 px-3 text-right text-sm">
-                    {formatCurrency(item.total)}
+                    {formatCurrency(item.total_price)}
                   </td>
                 </tr>
               ))}
-            </tbody> */}
+            </tbody>
           </table>
 
           {/* Totals */}
@@ -203,7 +201,9 @@ export function InvoiceViewModal({ isOpen, onClose, invoice }) {
           <div className="border-t pt-4">
             <div className="flex justify-between text-sm">
               <span>Payment Method:</span>
-              <span className="capitalize">{invoice.paymentMethod}</span>
+              <span className="capitalize">
+                {invoiceItems?.payments[0].payment_method}
+              </span>
             </div>
             <div className="flex justify-between text-sm">
               <span>Amount Paid:</span>
@@ -216,21 +216,6 @@ export function InvoiceViewModal({ isOpen, onClose, invoice }) {
             <p>Thank you for staying at {settings?.general?.name}!</p>
             <p>We look forward to welcoming you again.</p>
           </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-2 pt-4 print:hidden">
-          <Button variant="outline" onClick={handlePrint} className="flex-1">
-            <Printer className="h-4 w-4 mr-2" />
-            Print
-          </Button>
-          <Button variant="outline" onClick={handleDownload} className="flex-1">
-            <Download className="h-4 w-4 mr-2" />
-            Download
-          </Button>
-          <Button variant="ghost" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
         </div>
       </DialogContent>
     </Dialog>

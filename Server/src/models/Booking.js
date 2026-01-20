@@ -6,19 +6,49 @@ class Booking {
   /**
    * Find booking by ID
    */
+  // static async findById(id) {
+  //   const [rows] = await db.execute(
+  //     `SELECT b.*,
+  //       c.full_name as customer_name, c.contact_number as customer_phone,
+  //       r.room_number, r.type as room_type,
+  //       u.name as created_by_name
+  //      FROM bookings b
+  //      LEFT JOIN customers c ON b.customer_id = c.id
+  //      LEFT JOIN rooms r ON b.room_id = r.id
+  //      LEFT JOIN users u ON b.created_by = u.id
+  //      WHERE b.id = ?`,
+  //     [id],
+  //   );
+  //   return rows[0];
+  // }
   static async findById(id) {
     const [rows] = await db.execute(
-      `SELECT b.*, 
-        c.full_name as customer_name, c.contact_number as customer_phone,
-        r.room_number, r.type as room_type,
-        u.name as created_by_name
-       FROM bookings b
-       LEFT JOIN customers c ON b.customer_id = c.id
-       LEFT JOIN rooms r ON b.room_id = r.id
-       LEFT JOIN users u ON b.created_by = u.id
-       WHERE b.id = ?`,
-      [id]
+      `
+    SELECT 
+      b.*,
+      c.full_name AS customer_name,
+      c.contact_number AS customer_phone,
+      c.state_id AS customer_state_id,
+
+      -- state details
+      s.name AS customer_state_name,
+      s.state_code AS customer_state_code,
+      s.gst_state_code AS customer_gst_state_code,
+
+      r.room_number,
+      r.type AS room_type,
+
+      u.name AS created_by_name
+    FROM bookings b
+    LEFT JOIN customers c ON b.customer_id = c.id
+    LEFT JOIN states s ON c.state_id = s.id
+    LEFT JOIN rooms r ON b.room_id = r.id
+    LEFT JOIN users u ON b.created_by = u.id
+    WHERE b.id = ?
+    `,
+      [id],
     );
+
     return rows[0];
   }
 
@@ -34,7 +64,7 @@ class Booking {
        LEFT JOIN customers c ON b.customer_id = c.id
        LEFT JOIN rooms r ON b.room_id = r.id
        WHERE b.booking_number = ?`,
-      [bookingNumber]
+      [bookingNumber],
     );
     return rows[0];
   }
@@ -46,7 +76,7 @@ class Booking {
     roomId,
     checkInDate,
     checkOutDate,
-    excludeBookingId = null
+    excludeBookingId = null,
   ) {
     let query = `
       SELECT COUNT(*) as count FROM bookings
@@ -78,20 +108,90 @@ class Booking {
   /**
    * Create new booking
    */
+  // static async create(bookingData, createdBy) {
+  //   const id = uuidv4();
+  //   const bookingNumber = generateBookingNumber();
+  //   const totalNights = calculateNights(
+  //     bookingData.check_in_date,
+  //     bookingData.check_out_date
+  //   );
+  //   const totalAmount = bookingData.room_rate * totalNights;
+
+  //   // Check availability before creating
+  //   const isAvailable = await this.checkAvailability(
+  //     bookingData.room_id,
+  //     bookingData.check_in_date,
+  //     bookingData.check_out_date
+  //   );
+
+  //   if (!isAvailable) {
+  //     throw new Error("Room is not available for the selected dates");
+  //   }
+
+  //   const [result] = await db.execute(
+  //     `INSERT INTO bookings (
+  //       id, booking_number, customer_id, room_id,
+  //       check_in_date, check_out_date, number_of_guests, special_requests,
+  //       room_rate, total_nights, total_amount, advance_payment,
+  //       status, created_by
+  //     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  //     [
+  //       id,
+  //       bookingNumber,
+  //       bookingData.customer_id,
+  //       bookingData.room_id,
+  //       bookingData.check_in_date,
+  //       bookingData.check_out_date,
+  //       bookingData.number_of_guests || 1,
+  //       bookingData.special_requests || null,
+  //       bookingData.room_rate,
+  //       totalNights,
+  //       totalAmount,
+  //       bookingData.advance_payment || 0,
+  //       bookingData.status || "pending",
+  //       createdBy,
+  //     ]
+  //   );
+
+  //   // Update room status to reserved
+  //   await db.execute("UPDATE rooms SET status = ? WHERE id = ?", [
+  //     "reserved",
+  //     bookingData.room_id,
+  //   ]);
+
+  //   return this.findById(id);
+  // }
+
+  // In create method:
   static async create(bookingData, createdBy) {
+    // Get current room pricing from settings if not provided
     const id = uuidv4();
     const bookingNumber = generateBookingNumber();
+    let roomRate = bookingData.room_rate;
+
+    if (!roomRate) {
+      const [rooms] = await db.execute("SELECT type FROM rooms WHERE id = ?", [
+        bookingData.room_id,
+      ]);
+
+      if (rooms[0]) {
+        const pricingSetting = await Setting.getByKey("room_pricing");
+        const pricing = pricingSetting.setting_value;
+        roomRate = pricing[rooms[0].type] || 0;
+      }
+    }
+
+    // Rest of the code using roomRate...
     const totalNights = calculateNights(
       bookingData.check_in_date,
-      bookingData.check_out_date
+      bookingData.check_out_date,
     );
-    const totalAmount = bookingData.room_rate * totalNights;
+    const totalAmount = roomRate * totalNights;
 
-    // Check availability before creating
     const isAvailable = await this.checkAvailability(
       bookingData.room_id,
       bookingData.check_in_date,
-      bookingData.check_out_date
+      bookingData.check_out_date,
     );
 
     if (!isAvailable) {
@@ -100,9 +200,9 @@ class Booking {
 
     const [result] = await db.execute(
       `INSERT INTO bookings (
-        id, booking_number, customer_id, room_id, 
+        id, booking_number, customer_id, room_id,
         check_in_date, check_out_date, number_of_guests, special_requests,
-        room_rate, total_nights, total_amount, advance_payment, 
+        room_rate, total_nights, total_amount, advance_payment,
         status, created_by
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
@@ -120,7 +220,7 @@ class Booking {
         bookingData.advance_payment || 0,
         bookingData.status || "pending",
         createdBy,
-      ]
+      ],
     );
 
     // Update room status to reserved
@@ -156,7 +256,7 @@ class Booking {
         roomId,
         checkIn,
         checkOut,
-        id
+        id,
       );
       if (!isAvailable) {
         throw new Error("Room is not available for the selected dates");
@@ -209,7 +309,7 @@ class Booking {
 
     await db.execute(
       `UPDATE bookings SET ${updates.join(", ")} WHERE id = ?`,
-      values
+      values,
     );
 
     return this.findById(id);
@@ -240,7 +340,7 @@ class Booking {
            cancelled_at = NOW(), 
            cancelled_by = ?
        WHERE id = ?`,
-      [reason, cancelledBy, id]
+      [reason, cancelledBy, id],
     );
 
     // Update room status back to available
@@ -274,7 +374,7 @@ class Booking {
       `UPDATE bookings 
        SET status = 'checked_in', actual_check_in = NOW()
        WHERE id = ?`,
-      [id]
+      [id],
     );
 
     // Update room status to occupied
@@ -304,13 +404,13 @@ class Booking {
       `UPDATE bookings 
        SET status = 'checked_out', actual_check_out = NOW()
        WHERE id = ?`,
-      [id]
+      [id],
     );
 
     // Update room status to cleaning
     await db.execute(
       "UPDATE rooms SET status = ?, housekeeping_status = ? WHERE id = ?",
-      ["cleaning", "dirty", booking.room_id]
+      ["cleaning", "dirty", booking.room_id],
     );
 
     // Update customer stats
@@ -319,7 +419,7 @@ class Booking {
        SET total_stays = total_stays + 1, 
            total_spent = total_spent + ?
        WHERE id = ?`,
-      [booking.total_amount, booking.customer_id]
+      [booking.total_amount, booking.customer_id],
     );
 
     return this.findById(id);
@@ -382,16 +482,74 @@ class Booking {
   //   const [rows] = await db.execute(query, values);
   //   return rows;
   // }
+  // static async findAll(filters = {}) {
+  //   let query = `
+  //   SELECT b.*,
+  //     c.full_name as customer_name, c.contact_number as customer_phone, c.state_id as customer_state_id,
+  //     r.room_number, r.type as room_type
+  //   FROM bookings b
+  //   LEFT JOIN customers c ON b.customer_id = c.id
+  //   LEFT JOIN rooms r ON b.room_id = r.id
+  //   WHERE 1=1
+  // `;
+  //   const values = [];
+
+  //   if (filters.status) {
+  //     query += " AND b.status = ?";
+  //     values.push(filters.status);
+  //   }
+
+  //   if (filters.customer_id) {
+  //     query += " AND b.customer_id = ?";
+  //     values.push(filters.customer_id);
+  //   }
+
+  //   if (filters.room_id) {
+  //     query += " AND b.room_id = ?";
+  //     values.push(filters.room_id);
+  //   }
+
+  //   if (filters.check_in_date) {
+  //     query += " AND b.check_in_date = ?";
+  //     values.push(filters.check_in_date);
+  //   }
+
+  //   if (filters.search) {
+  //     query +=
+  //       " AND (b.booking_number LIKE ? OR c.full_name LIKE ? OR r.room_number LIKE ?)";
+  //     const searchTerm = `%${filters.search}%`;
+  //     values.push(searchTerm, searchTerm, searchTerm);
+  //   }
+
+  //   query += " ORDER BY b.created_at DESC";
+
+  //   // ✅ FIXED PAGINATION
+  //   const limit = Number.isInteger(filters.limit) ? filters.limit : 10;
+  //   const offset = Number.isInteger(filters.offset) ? filters.offset : 0;
+  //   query += ` LIMIT ${limit} OFFSET ${offset}`;
+
+  //   const [rows] = await db.execute(query, values);
+  //   return rows;
+  // }
   static async findAll(filters = {}) {
     let query = `
-    SELECT b.*, 
-      c.full_name as customer_name, c.contact_number as customer_phone,
-      r.room_number, r.type as room_type
+    SELECT 
+      b.*, 
+      c.full_name AS customer_name,
+      c.contact_number AS customer_phone,
+      c.state_id AS customer_state_id,
+      s.gst_state_code AS customer_gst_state_code,
+      r.room_number,
+      r.type AS room_type,
+      i.id AS invoice_id
     FROM bookings b
     LEFT JOIN customers c ON b.customer_id = c.id
+    LEFT JOIN states s ON c.state_id = s.id
     LEFT JOIN rooms r ON b.room_id = r.id
+    LEFT JOIN invoices i ON i.booking_id = b.id
     WHERE 1=1
   `;
+
     const values = [];
 
     if (filters.status) {
@@ -415,15 +573,19 @@ class Booking {
     }
 
     if (filters.search) {
-      query +=
-        " AND (b.booking_number LIKE ? OR c.full_name LIKE ? OR r.room_number LIKE ?)";
+      query += `
+      AND (
+        b.booking_number LIKE ? 
+        OR c.full_name LIKE ? 
+        OR r.room_number LIKE ?
+      )
+    `;
       const searchTerm = `%${filters.search}%`;
       values.push(searchTerm, searchTerm, searchTerm);
     }
 
     query += " ORDER BY b.created_at DESC";
 
-    // ✅ FIXED PAGINATION
     const limit = Number.isInteger(filters.limit) ? filters.limit : 10;
     const offset = Number.isInteger(filters.offset) ? filters.offset : 0;
     query += ` LIMIT ${limit} OFFSET ${offset}`;
@@ -472,12 +634,12 @@ class Booking {
        WHERE DATE(b.check_in_date) = CURDATE()
        AND b.status IN ('confirmed', 'pending')
        ORDER BY b.check_in_date`,
-      []
+      [],
     );
     return rows;
   }
 
-/**
+  /**
    * Get today's check-outs
    */
   static async getTodayCheckOuts() {
@@ -491,7 +653,7 @@ class Booking {
        WHERE DATE(b.check_out_date) = CURDATE()
        AND b.status = 'checked_in'
        ORDER BY b.check_out_date`,
-      []
+      [],
     );
     return rows;
   }
@@ -511,7 +673,7 @@ class Booking {
               OR b.check_out_date BETWEEN ? AND ?
               OR (b.check_in_date <= ? AND b.check_out_date >= ?))
        ORDER BY b.check_in_date`,
-      [startDate, endDate, startDate, endDate, startDate, endDate]
+      [startDate, endDate, startDate, endDate, startDate, endDate],
     );
     return rows;
   }
@@ -528,7 +690,7 @@ class Booking {
        LEFT JOIN customers c ON b.customer_id = c.id
        LEFT JOIN rooms r ON b.room_id = r.id
        WHERE b.status = 'checked_in'
-       ORDER BY b.check_in_date DESC`
+       ORDER BY b.check_in_date DESC`,
     );
     return rows;
   }

@@ -17,10 +17,19 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { customersAPI } from "@/api/customers";
 import { UserPlus, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { statesAPI } from "@/api/states";
+import { useQuery } from "@tanstack/react-query";
 
 export default function NewCustomer() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const { data: statesData } = useQuery({
+    queryKey: ["states"],
+    queryFn: statesAPI.getAll,
+  });
+
+  const states = statesData?.data?.states || [];
 
   const createCustomerMutation = useMutation({
     mutationFn: (data) => customersAPI.create(data),
@@ -47,6 +56,7 @@ export default function NewCustomer() {
     roomPreference: "",
     floorPreference: "",
     specialRequests: "",
+    state_id: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -66,6 +76,7 @@ export default function NewCustomer() {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Please enter a valid email address";
     }
+    if (!formData.state_id) newErrors.state_id = "State is required";
     if (!formData.idProofType)
       newErrors.idProofType = "ID proof type is required";
     if (!formData.idProofNumber.trim())
@@ -81,6 +92,8 @@ export default function NewCustomer() {
       return;
     }
 
+    console.log(formData, "f");
+
     const newCustomer = {
       id: `cust-${Date.now()}`,
       full_name: formData.fullName.trim(),
@@ -89,6 +102,7 @@ export default function NewCustomer() {
       id_proof_type: formData.idProofType,
       id_proof_number: formData.idProofNumber.trim(),
       address: formData.address.trim(),
+      state_id: formData.state_id || null,
       date_of_birth: formData.dateOfBirth || undefined,
       gender: formData.gender || undefined,
       createdAt: new Date().toISOString(),
@@ -203,7 +217,7 @@ export default function NewCustomer() {
                       value={formData.gender}
                       onValueChange={(v) => handleChange("gender", v)}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select gender" />
                       </SelectTrigger>
                       <SelectContent>
@@ -212,6 +226,36 @@ export default function NewCustomer() {
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="state">State *</Label>
+                    <Select
+                      value={formData.state_id}
+                      onValueChange={(v) => handleChange("state_id", v)}
+                    >
+                      <SelectTrigger
+                        className={
+                          errors.state_id ? "border-destructive" : "w-full"
+                        }
+                      >
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[200px] ">
+                        {states.map((state) => (
+                          <SelectItem
+                            key={state.id}
+                            value={state.id.toString()}
+                          >
+                            {state.name} ({state.state_code})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.state_id && (
+                      <p className="text-sm text-destructive">
+                        {errors.state_id}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="address">Address</Label>
@@ -239,7 +283,7 @@ export default function NewCustomer() {
                     >
                       <SelectTrigger
                         className={
-                          errors.idProofType ? "border-destructive" : ""
+                          errors.idProofType ? "border-destructive" : "w-full"
                         }
                       >
                         <SelectValue placeholder="Select ID type" />

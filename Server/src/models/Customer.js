@@ -5,10 +5,20 @@ class Customer {
   /**
    * Find customer by ID
    */
+  // static async findById(id) {
+  //   const [rows] = await db.execute("SELECT * FROM customers WHERE id = ?", [
+  //     id,
+  //   ]);
+  //   return rows[0];
+  // }
   static async findById(id) {
-    const [rows] = await db.execute("SELECT * FROM customers WHERE id = ?", [
-      id,
-    ]);
+    const [rows] = await db.execute(
+      `SELECT c.*, s.name as state_name, s.state_code, s.gst_state_code
+     FROM customers c
+     LEFT JOIN states s ON c.state_id = s.id
+     WHERE c.id = ?`,
+      [id],
+    );
     return rows[0];
   }
 
@@ -18,7 +28,7 @@ class Customer {
   static async findByContact(contactNumber) {
     const [rows] = await db.execute(
       "SELECT * FROM customers WHERE contact_number = ?",
-      [contactNumber]
+      [contactNumber],
     );
     return rows[0];
   }
@@ -29,7 +39,7 @@ class Customer {
   static async findByIdProof(idProofType, idProofNumber) {
     const [rows] = await db.execute(
       "SELECT * FROM customers WHERE id_proof_type = ? AND id_proof_number = ?",
-      [idProofType, idProofNumber]
+      [idProofType, idProofNumber],
     );
     return rows[0];
   }
@@ -39,12 +49,13 @@ class Customer {
    */
   static async create(customerData) {
     const id = uuidv4();
+    console.log(customerData, "c");
 
     const [result] = await db.execute(
       `INSERT INTO customers (
         id, full_name, contact_number, email, id_proof_type, 
-        id_proof_number, address, date_of_birth, gender, preferences, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        id_proof_number, address, date_of_birth, gender, preferences, notes, state_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         customerData.full_name,
@@ -59,7 +70,8 @@ class Customer {
           ? JSON.stringify(customerData.preferences)
           : null,
         customerData.notes || null,
-      ]
+        customerData.state_id || null,
+      ],
     );
 
     return this.findById(id);
@@ -90,6 +102,10 @@ class Customer {
         values.push(customerData[field]);
       }
     });
+    if (customerData.state_id !== undefined) {
+      updates.push("state_id = ?");
+      values.push(customerData.state_id);
+    }
 
     if (customerData.preferences !== undefined) {
       updates.push("preferences = ?");
@@ -104,7 +120,7 @@ class Customer {
 
     await db.execute(
       `UPDATE customers SET ${updates.join(", ")} WHERE id = ?`,
-      values
+      values,
     );
 
     return this.findById(id);
@@ -158,28 +174,75 @@ class Customer {
   //   }));
   // }
 
+  // static async findAll(filters = {}) {
+  //   let query = "SELECT * FROM customers WHERE 1=1";
+  //   const values = [];
+
+  //   if (filters.search) {
+  //     query +=
+  //       " AND (full_name LIKE ? OR contact_number LIKE ? OR email LIKE ?)";
+  //     const searchTerm = `%${filters.search}%`;
+  //     values.push(searchTerm, searchTerm, searchTerm);
+  //   }
+
+  //   if (filters.gender) {
+  //     query += " AND gender = ?";
+  //     values.push(filters.gender);
+  //   }
+
+  //   query += " ORDER BY created_at DESC";
+
+  //   // ✅ SAFE numeric pagination
+  //   const limit = Number.isInteger(filters.limit) ? filters.limit : 10;
+  //   const offset = Number.isInteger(filters.offset) ? filters.offset : 0;
+
+  //   query += ` LIMIT ${limit} OFFSET ${offset}`;
+
+  //   const [rows] = await db.execute(query, values);
+
+  //   return rows.map((row) => ({
+  //     ...row,
+  //     preferences:
+  //       typeof row.preferences === "string"
+  //         ? JSON.parse(row.preferences)
+  //         : row.preferences || {},
+  //   }));
+  // }
   static async findAll(filters = {}) {
-    let query = "SELECT * FROM customers WHERE 1=1";
+    let query = `
+    SELECT 
+      c.*,
+      s.gst_state_code AS customer_gst_state_code,
+      s.state_code AS customer_state_code
+    FROM customers c
+    LEFT JOIN states s ON c.state_id = s.id
+    WHERE 1=1
+  `;
+
     const values = [];
 
     if (filters.search) {
-      query +=
-        " AND (full_name LIKE ? OR contact_number LIKE ? OR email LIKE ?)";
+      query += `
+      AND (
+        c.full_name LIKE ? 
+        OR c.contact_number LIKE ? 
+        OR c.email LIKE ?
+      )
+    `;
       const searchTerm = `%${filters.search}%`;
       values.push(searchTerm, searchTerm, searchTerm);
     }
 
     if (filters.gender) {
-      query += " AND gender = ?";
+      query += " AND c.gender = ?";
       values.push(filters.gender);
     }
 
-    query += " ORDER BY created_at DESC";
+    query += " ORDER BY c.created_at DESC";
 
     // ✅ SAFE numeric pagination
     const limit = Number.isInteger(filters.limit) ? filters.limit : 10;
     const offset = Number.isInteger(filters.offset) ? filters.offset : 0;
-
     query += ` LIMIT ${limit} OFFSET ${offset}`;
 
     const [rows] = await db.execute(query, values);
@@ -222,18 +285,18 @@ class Customer {
   static async updateStats(
     customerId,
     additionalStays = 1,
-    additionalSpent = 0
+    additionalSpent = 0,
   ) {
     await db.execute(
       `UPDATE customers 
        SET total_stays = total_stays + ?, 
            total_spent = total_spent + ?
        WHERE id = ?`,
-      [additionalStays, additionalSpent, customerId]
+      [additionalStays, additionalSpent, customerId],
     );
   }
 
-/**
+  /**
    * Get customer booking history
    */
   static async getBookingHistory(customerId) {
@@ -245,7 +308,7 @@ class Customer {
        JOIN rooms r ON b.room_id = r.id
        WHERE b.customer_id = ?
        ORDER BY b.created_at DESC`,
-      [customerId]
+      [customerId],
     );
     return rows;
   }
@@ -255,7 +318,7 @@ class Customer {
    */
   static async getAll() {
     const [rows] = await db.execute(
-      "SELECT * FROM customers ORDER BY created_at DESC"
+      "SELECT * FROM customers ORDER BY created_at DESC",
     );
     return rows;
   }

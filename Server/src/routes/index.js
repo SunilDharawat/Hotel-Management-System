@@ -14,6 +14,7 @@ const smsRoutes = require("./sms");
 const templateRoutes = require("./templates");
 const notificationRoutes = require("./notifications");
 const reportRoutes = require("./reports");
+const statesRoutes = require("./states");
 
 // Mount routes
 router.use("/auth", authRoutes);
@@ -28,6 +29,7 @@ router.use("/sms", smsRoutes);
 router.use("/templates", templateRoutes);
 router.use("/notifications", notificationRoutes);
 router.use("/reports", reportRoutes);
+router.use("/states", statesRoutes);
 
 // Health check
 router.get("/health", (req, res) => {

@@ -26,6 +26,8 @@ import {
   IndianRupee,
 } from "lucide-react";
 import { format } from "date-fns";
+import { invoicesAPI } from "@/api/invoices";
+import { toast } from "sonner";
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
@@ -91,6 +93,17 @@ export default function Bookings() {
 
   const handleExtend = (booking) => {
     setExtendBooking(booking);
+  };
+
+  const handleViewPDF = (booking) => {
+    try {
+      const pdfUrl = invoicesAPI.getPDFUrl(booking.invoice_id);
+      window.open(pdfUrl, "_blank");
+    } catch (error) {
+      toast.error("Failed to open invoice", {
+        description: error.message,
+      });
+    }
   };
 
   const formatCurrency = (value) => {
@@ -310,14 +323,16 @@ export default function Bookings() {
                     </Button>
                   )}
 
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => navigate(`/bookings/${booking.id}/edit`)}
-                    className="h-9 ml-auto lg:ml-0 w-full md:w-auto"
-                  >
-                    View Details
-                  </Button>
+                  {booking.status === "checked_out" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleViewPDF(booking)}
+                      className="h-9 ml-auto lg:ml-0 w-full md:w-auto"
+                    >
+                      View Invoice
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
