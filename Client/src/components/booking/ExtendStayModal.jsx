@@ -57,7 +57,11 @@ export function ExtendStayModal({ isOpen, onClose, booking }) {
     enabled: !!newCheckOut,
   });
 
-  const gstRates = settings?.data?.gst_rates || { cgst: 6, sgst: 6 };
+  const gstRates = settings?.data?.gst_rates || {};
+  const gstState = settings?.data?.hotel_state || {};
+
+  const isSameState =
+    String(gstState.state_id) === booking.customer_gst_state_code;
 
   // Calculate additional charges
   const additionalNights = differenceInDays(
@@ -66,10 +70,20 @@ export function ExtendStayModal({ isOpen, onClose, booking }) {
   );
   const roomRate = booking.room_rate || 0;
   const additionalRoomCharges = additionalNights * roomRate;
-  const additionalCgst = additionalRoomCharges * (gstRates.cgst / 100);
-  const additionalSgst = additionalRoomCharges * (gstRates.sgst / 100);
+  const additionalCgst = isSameState
+    ? additionalRoomCharges * (gstRates.cgst / 100)
+    : 0;
+
+  const additionalSgst = isSameState
+    ? additionalRoomCharges * (gstRates.sgst / 100)
+    : 0;
+
+  const additionalIgst = !isSameState
+    ? additionalRoomCharges * (gstRates.igst / 100)
+    : 0;
+
   const totalAdditionalCharges =
-    additionalRoomCharges + additionalCgst + additionalSgst;
+    additionalRoomCharges + additionalCgst + additionalSgst + additionalIgst;
 
   // Check if the same room is available
   const availableRooms = availabilityData?.data?.rooms || [];
@@ -200,14 +214,24 @@ export function ExtendStayModal({ isOpen, onClose, booking }) {
                 </span>
                 <span>{formatCurrency(additionalRoomCharges)}</span>
               </div>
-              <div className="flex justify-between text-muted-foreground">
-                <span>CGST ({gstRates.cgst}%)</span>
-                <span>{formatCurrency(additionalCgst)}</span>
-              </div>
-              <div className="flex justify-between text-muted-foreground">
-                <span>SGST ({gstRates.sgst}%)</span>
-                <span>{formatCurrency(additionalSgst)}</span>
-              </div>
+              {isSameState ? (
+                <>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>CGST ({gstRates.cgst}%)</span>
+                    <span>{formatCurrency(additionalCgst)}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>SGST ({gstRates.sgst}%)</span>
+                    <span>{formatCurrency(additionalSgst)}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-between text-muted-foreground">
+                  <span>IGST ({gstRates.igst}%)</span>
+                  <span>{formatCurrency(additionalIgst)}</span>
+                </div>
+              )}
+
               <div className="flex justify-between font-semibold border-t pt-2">
                 <span>Additional Charges</span>
                 <span>{formatCurrency(totalAdditionalCharges)}</span>

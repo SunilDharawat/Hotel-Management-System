@@ -1,3 +1,268 @@
+// import { useState } from "react";
+// import { useNavigate } from "react-router-dom";
+// import { useMutation, useQueryClient } from "@tanstack/react-query";
+// import { MainLayout } from "@/components/layout/MainLayout";
+// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// import { Button } from "@/components/ui/button";
+// import { Input } from "@/components/ui/input";
+// import { Label } from "@/components/ui/label";
+// import {
+//   Select,
+//   SelectContent,
+//   SelectItem,
+//   SelectTrigger,
+//   SelectValue,
+// } from "@/components/ui/select";
+// import { Textarea } from "@/components/ui/textarea";
+// import { roomsAPI } from "@/api/rooms";
+// import { ArrowLeft, DoorOpen, Save, Loader2 } from "lucide-react";
+// import { toast } from "sonner";
+
+// export default function NewRoom() {
+//   const navigate = useNavigate();
+//   const queryClient = useQueryClient();
+
+//   // 1. Mutation for creating a room
+//   const createRoomMutation = useMutation({
+//     mutationFn: (data) => roomsAPI.create(data),
+//     onSuccess: () => {
+//       toast.success("Room created successfully!");
+//       queryClient.invalidateQueries({ queryKey: ["rooms"] });
+//       navigate("/rooms");
+//     },
+//     onError: (error) => {
+//       toast.error(error?.response?.data?.message || "Failed to create room");
+//     },
+//   });
+
+//   // 2. Form State
+//   const [formData, setFormData] = useState(
+//     room_number: "",
+//     type: "single",
+//     floor: "",
+//     base_price: "",
+//     max_occupancy: "2",
+//     size_sqft: "",
+//     view_type: "city",
+//     description: "",
+//   });
+
+//   const [errors, setErrors] = useState({});
+
+//   // 3. Validation Logic
+//   const validateForm = () => {
+//     const newErrors = {};
+//     if (!formData.room_number.trim())
+//       newErrors.room_number = "Room number is required";
+//     if (!formData.floor) newErrors.floor = "Floor is required";
+//     if (!formData.base_price || formData.base_price <= 0)
+//       newErrors.base_price = "Enter a valid price";
+//     if (!formData.size_sqft) newErrors.size_sqft = "Room size is required";
+
+//     setErrors(newErrors);
+//     return Object.keys(newErrors).length === 0;
+//   };
+
+//   // 4. Handlers
+//   const handleChange = (field, value) => {
+//     setFormData((prev) => ({ ...prev, [field]: value }));
+//     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
+//   };
+
+//   const handleSubmit = (e) => {
+//     e.preventDefault();
+//     if (!validateForm()) {
+//       toast.error("Please fill all required fields");
+//       return;
+//     }
+
+//     // Convert string inputs to numbers for the API
+//     const roomPayload = {
+//       ...formData,
+//       floor: parseInt(formData.floor),
+//       base_price: parseFloat(formData.base_price),
+//       max_occupancy: parseInt(formData.max_occupancy),
+//       size_sqft: parseInt(formData.size_sqft),
+//     };
+
+//     createRoomMutation.mutate(roomPayload);
+//   };
+
+//   return (
+//     <MainLayout title="Add New Room" subtitle="Expand your hotel inventory">
+//       <div className="max-w-3xl mx-auto animate-fade-in">
+//         <Button
+//           variant="ghost"
+//           onClick={() => navigate("/rooms")}
+//           className="mb-4"
+//         >
+//           <ArrowLeft className="h-4 w-4 mr-2" />
+//           Back to Inventory
+//         </Button>
+
+//         <form onSubmit={handleSubmit}>
+//           <Card className="border-t-4 border-t-primary">
+//             <CardHeader>
+//               <CardTitle className="flex items-center gap-2">
+//                 <DoorOpen className="h-5 w-5 text-primary" />
+//                 Room Configuration
+//               </CardTitle>
+//             </CardHeader>
+//             <CardContent className="space-y-6">
+//               {/* Basic Info Section */}
+//               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+//                 <div className="space-y-2">
+//                   <Label htmlFor="room_number">Room Number *</Label>
+//                   <Input
+//                     id="room_number"
+//                     placeholder="e.g. 201"
+//                     value={formData.room_number}
+//                     onChange={(e) =>
+//                       handleChange("room_number", e.target.value)
+//                     }
+//                     className={errors.room_number ? "border-destructive" : ""}
+//                   />
+//                 </div>
+
+//                 <div className="space-y-2">
+//                   <Label htmlFor="type">Room Type *</Label>
+//                   <Select
+//                     value={formData.type}
+//                     onValueChange={(v) => handleChange("type", v)}
+//                   >
+//                     <SelectTrigger>
+//                       <SelectValue />
+//                     </SelectTrigger>
+//                     <SelectContent>
+//                       <SelectItem value="single">Single</SelectItem>
+//                       <SelectItem value="double">Double</SelectItem>
+//                       <SelectItem value="deluxe">Deluxe</SelectItem>
+//                       <SelectItem value="suite">Suite</SelectItem>
+//                       <SelectItem value="hall">Hall</SelectItem>
+//                     </SelectContent>
+//                   </Select>
+//                 </div>
+
+//                 <div className="space-y-2">
+//                   <Label htmlFor="floor">Floor *</Label>
+//                   <Input
+//                     id="floor"
+//                     type="number"
+//                     placeholder="e.g. 2"
+//                     value={formData.floor}
+//                     onChange={(e) => handleChange("floor", e.target.value)}
+//                     className={errors.floor ? "border-destructive" : ""}
+//                   />
+//                 </div>
+
+//                 <div className="space-y-2">
+//                   <Label htmlFor="base_price">Base Price (INR) *</Label>
+//                   <Input
+//                     id="base_price"
+//                     type="number"
+//                     placeholder="7500"
+//                     value={formData.base_price}
+//                     onChange={(e) => handleChange("base_price", e.target.value)}
+//                     className={errors.base_price ? "border-destructive" : ""}
+//                   />
+//                 </div>
+//               </div>
+
+//               {/* Specifications Section */}
+//               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t">
+//                 <div className="space-y-2">
+//                   <Label htmlFor="max_occupancy">Max Occupancy</Label>
+//                   <Select
+//                     value={formData.max_occupancy}
+//                     onValueChange={(v) => handleChange("max_occupancy", v)}
+//                   >
+//                     <SelectTrigger>
+//                       <SelectValue />
+//                     </SelectTrigger>
+//                     <SelectContent>
+//                       {[1, 2, 3, 4, 5, 6].map((num) => (
+//                         <SelectItem key={num} value={num.toString()}>
+//                           {num} Persons
+//                         </SelectItem>
+//                       ))}
+//                     </SelectContent>
+//                   </Select>
+//                 </div>
+
+//                 <div className="space-y-2">
+//                   <Label htmlFor="size_sqft">Size (Sq. Ft) *</Label>
+//                   <Input
+//                     id="size_sqft"
+//                     type="number"
+//                     placeholder="450"
+//                     value={formData.size_sqft}
+//                     onChange={(e) => handleChange("size_sqft", e.target.value)}
+//                   />
+//                 </div>
+
+//                 <div className="space-y-2">
+//                   <Label htmlFor="view_type">View Type</Label>
+//                   <Select
+//                     value={formData.view_type}
+//                     onValueChange={(v) => handleChange("view_type", v)}
+//                   >
+//                     <SelectTrigger>
+//                       <SelectValue />
+//                     </SelectTrigger>
+//                     <SelectContent>
+//                       <SelectItem value="city_view">City View</SelectItem>
+//                       <SelectItem value="garden_view">Garden View</SelectItem>
+//                       <SelectItem value="sea_view">Sea View</SelectItem>
+//                       <SelectItem value="pool_view">Pool View</SelectItem>
+//                       <SelectItem value="mountain_view">
+//                         Mountain View
+//                       </SelectItem>
+//                     </SelectContent>
+//                   </Select>
+//                 </div>
+//               </div>
+
+//               {/* Description Section */}
+//               <div className="space-y-2 pt-4 border-t">
+//                 <Label htmlFor="description">Room Description</Label>
+//                 <Textarea
+//                   id="description"
+//                   placeholder="Describe the room amenities, features, etc..."
+//                   rows={4}
+//                   value={formData.description}
+//                   onChange={(e) => handleChange("description", e.target.value)}
+//                 />
+//               </div>
+
+//               {/* Action Buttons */}
+//               <div className="flex justify-end gap-4 pt-6">
+//                 <Button
+//                   type="button"
+//                   variant="outline"
+//                   onClick={() => navigate("/rooms")}
+//                 >
+//                   Cancel
+//                 </Button>
+//                 <Button
+//                   type="submit"
+//                   className="hotel-button-gold px-8"
+//                   disabled={createRoomMutation.isPending}
+//                 >
+//                   {createRoomMutation.isPending ? (
+//                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+//                   ) : (
+//                     <Save className="h-4 w-4 mr-2" />
+//                   )}
+//                   Create Room
+//                 </Button>
+//               </div>
+//             </CardContent>
+//           </Card>
+//         </form>
+//       </div>
+//     </MainLayout>
+//   );
+// }
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -15,7 +280,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { roomsAPI } from "@/api/rooms";
-import { ArrowLeft, DoorOpen, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, DoorOpen, Save, Loader2, Users } from "lucide-react";
 import { toast } from "sonner";
 
 export default function NewRoom() {
@@ -26,7 +291,7 @@ export default function NewRoom() {
   const createRoomMutation = useMutation({
     mutationFn: (data) => roomsAPI.create(data),
     onSuccess: () => {
-      toast.success("Room created successfully!");
+      toast.success("Room/Hall created successfully!");
       queryClient.invalidateQueries({ queryKey: ["rooms"] });
       navigate("/rooms");
     },
@@ -43,7 +308,7 @@ export default function NewRoom() {
     base_price: "",
     max_occupancy: "2",
     size_sqft: "",
-    view_type: "city",
+    view_type: "city_view",
     description: "",
   });
 
@@ -53,11 +318,13 @@ export default function NewRoom() {
   const validateForm = () => {
     const newErrors = {};
     if (!formData.room_number.trim())
-      newErrors.room_number = "Room number is required";
+      newErrors.room_number = "Identification number is required";
     if (!formData.floor) newErrors.floor = "Floor is required";
     if (!formData.base_price || formData.base_price <= 0)
       newErrors.base_price = "Enter a valid price";
-    if (!formData.size_sqft) newErrors.size_sqft = "Room size is required";
+    if (!formData.size_sqft) newErrors.size_sqft = "Size is required";
+    if (!formData.max_occupancy || formData.max_occupancy <= 0)
+      newErrors.max_occupancy = "Invalid occupancy";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -65,18 +332,32 @@ export default function NewRoom() {
 
   // 4. Handlers
   const handleChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const updated = { ...prev, [field]: value };
+
+      // Logic: When switching to Hall, update Occupancy and View Type defaults
+      if (field === "type") {
+        if (value === "hall") {
+          updated.max_occupancy = "50"; // Default hall capacity
+          updated.view_type = "party_hall";
+        } else {
+          updated.max_occupancy = "2"; // Default room capacity
+          updated.view_type = "city_view";
+        }
+      }
+      return updated;
+    });
+
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validateForm()) {
-      toast.error("Please fill all required fields");
+      toast.error("Please fill all required fields correctly");
       return;
     }
 
-    // Convert string inputs to numbers for the API
     const roomPayload = {
       ...formData,
       floor: parseInt(formData.floor),
@@ -88,8 +369,13 @@ export default function NewRoom() {
     createRoomMutation.mutate(roomPayload);
   };
 
+  const isHall = formData.type === "hall";
+
   return (
-    <MainLayout title="Add New Room" subtitle="Expand your hotel inventory">
+    <MainLayout
+      title={isHall ? "Add New Hall" : "Add New Room"}
+      subtitle="Expand your hotel inventory"
+    >
       <div className="max-w-3xl mx-auto animate-fade-in">
         <Button
           variant="ghost"
@@ -101,21 +387,23 @@ export default function NewRoom() {
         </Button>
 
         <form onSubmit={handleSubmit}>
-          <Card className="border-t-4 border-t-primary">
+          <Card className="border-t-4 border-t-primary shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DoorOpen className="h-5 w-5 text-primary" />
-                Room Configuration
+                {isHall ? "Hall / Banquet Details" : "Room Configuration"}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Basic Info Section */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="room_number">Room Number *</Label>
+                  <Label htmlFor="room_number">
+                    {isHall ? "Hall Name/Number *" : "Room Number *"}
+                  </Label>
                   <Input
                     id="room_number"
-                    placeholder="e.g. 201"
+                    placeholder={isHall ? "e.g. Grand Ballroom" : "e.g. 201"}
                     value={formData.room_number}
                     onChange={(e) =>
                       handleChange("room_number", e.target.value)
@@ -125,7 +413,7 @@ export default function NewRoom() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="type">Room Type *</Label>
+                  <Label htmlFor="type">Category *</Label>
                   <Select
                     value={formData.type}
                     onValueChange={(v) => handleChange("type", v)}
@@ -134,11 +422,11 @@ export default function NewRoom() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="single">Single</SelectItem>
-                      <SelectItem value="double">Double</SelectItem>
-                      <SelectItem value="deluxe">Deluxe</SelectItem>
-                      <SelectItem value="suite">Suite</SelectItem>
-                      <SelectItem value="hall">Hall</SelectItem>
+                      <SelectItem value="single">Single Room</SelectItem>
+                      <SelectItem value="double">Double Room</SelectItem>
+                      <SelectItem value="deluxe">Deluxe Room</SelectItem>
+                      <SelectItem value="suite">Executive Suite</SelectItem>
+                      <SelectItem value="hall">Hall / Banquet</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -170,23 +458,44 @@ export default function NewRoom() {
 
               {/* Specifications Section */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t">
+                {/* Max Occupancy - Conditional Rendering */}
                 <div className="space-y-2">
-                  <Label htmlFor="max_occupancy">Max Occupancy</Label>
-                  <Select
-                    value={formData.max_occupancy}
-                    onValueChange={(v) => handleChange("max_occupancy", v)}
+                  <Label
+                    htmlFor="max_occupancy"
+                    className="flex items-center gap-1"
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[1, 2, 3, 4, 5, 6].map((num) => (
-                        <SelectItem key={num} value={num.toString()}>
-                          {num} Persons
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <Users className="h-3 w-3" /> Max Capacity
+                  </Label>
+                  {isHall ? (
+                    <Input
+                      id="max_occupancy"
+                      type="number"
+                      placeholder="e.g. 150"
+                      value={formData.max_occupancy}
+                      onChange={(e) =>
+                        handleChange("max_occupancy", e.target.value)
+                      }
+                      className={
+                        errors.max_occupancy ? "border-destructive" : ""
+                      }
+                    />
+                  ) : (
+                    <Select
+                      value={formData.max_occupancy}
+                      onValueChange={(v) => handleChange("max_occupancy", v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[1, 2, 3, 4, 5, 6].map((num) => (
+                          <SelectItem key={num} value={num.toString()}>
+                            {num} Persons
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -194,14 +503,17 @@ export default function NewRoom() {
                   <Input
                     id="size_sqft"
                     type="number"
-                    placeholder="450"
+                    placeholder={isHall ? "2500" : "450"}
                     value={formData.size_sqft}
                     onChange={(e) => handleChange("size_sqft", e.target.value)}
                   />
                 </div>
 
+                {/* View Type / Hall Type - Conditional Rendering */}
                 <div className="space-y-2">
-                  <Label htmlFor="view_type">View Type</Label>
+                  <Label htmlFor="view_type">
+                    {isHall ? "Hall Purpose" : "View Type"}
+                  </Label>
                   <Select
                     value={formData.view_type}
                     onValueChange={(v) => handleChange("view_type", v)}
@@ -210,13 +522,26 @@ export default function NewRoom() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="city_view">City View</SelectItem>
-                      <SelectItem value="garden_view">Garden View</SelectItem>
-                      <SelectItem value="sea_view">Sea View</SelectItem>
-                      <SelectItem value="pool_view">Pool View</SelectItem>
-                      <SelectItem value="mountain_view">
-                        Mountain View
-                      </SelectItem>
+                      {isHall ? (
+                        <>
+                          <SelectItem value="party_hall">Party Hall</SelectItem>
+                          <SelectItem value="meeting_hall">
+                            Meeting Hall
+                          </SelectItem>
+                        </>
+                      ) : (
+                        <>
+                          <SelectItem value="city_view">City View</SelectItem>
+                          <SelectItem value="garden_view">
+                            Garden View
+                          </SelectItem>
+                          <SelectItem value="sea_view">Sea View</SelectItem>
+                          <SelectItem value="pool_view">Pool View</SelectItem>
+                          <SelectItem value="mountain_view">
+                            Mountain View
+                          </SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -224,10 +549,16 @@ export default function NewRoom() {
 
               {/* Description Section */}
               <div className="space-y-2 pt-4 border-t">
-                <Label htmlFor="description">Room Description</Label>
+                <Label htmlFor="description">
+                  {isHall ? "Hall Description & Features" : "Room Description"}
+                </Label>
                 <Textarea
                   id="description"
-                  placeholder="Describe the room amenities, features, etc..."
+                  placeholder={
+                    isHall
+                      ? "Mention stage, sound system, seating capacity..."
+                      : "Describe amenities like Wi-Fi, AC, mini-bar..."
+                  }
                   rows={4}
                   value={formData.description}
                   onChange={(e) => handleChange("description", e.target.value)}
@@ -245,7 +576,7 @@ export default function NewRoom() {
                 </Button>
                 <Button
                   type="submit"
-                  className="hotel-button-gold px-8"
+                  className="hotel-button-gold px-8 shadow-sm"
                   disabled={createRoomMutation.isPending}
                 >
                   {createRoomMutation.isPending ? (
@@ -253,7 +584,7 @@ export default function NewRoom() {
                   ) : (
                     <Save className="h-4 w-4 mr-2" />
                   )}
-                  Create Room
+                  {isHall ? "Create Hall" : "Create Room"}
                 </Button>
               </div>
             </CardContent>
